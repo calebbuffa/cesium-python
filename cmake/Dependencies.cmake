@@ -1,34 +1,7 @@
 # Third-party dependency bootstrapping for cesium-python.
 
-# Ensure zlib is available before libzip config.
-find_package(ZLIB 1.1.2 QUIET)
-if(NOT ZLIB_FOUND AND CESIUM_PYTHON_FETCH_ZLIB)
-    include(FetchContent)
-    set(ZLIB_BUILD_TESTING OFF CACHE BOOL "" FORCE)
-    set(ZLIB_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-    set(ZLIB_BUILD_SHARED OFF CACHE BOOL "" FORCE)
-    if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
-        cmake_policy(SET CMP0135 NEW)
-    endif()
-    FetchContent_Declare(
-        zlib
-        URL https://zlib.net/fossils/zlib-1.3.1.tar.gz
-        URL_HASH SHA256=9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-    )
-    FetchContent_MakeAvailable(zlib)
-    if(TARGET zlibstatic)
-        add_library(ZLIB::ZLIB ALIAS zlibstatic)
-        set(ZLIB_INCLUDE_DIR "${zlib_SOURCE_DIR}")
-        set(ZLIB_LIBRARY zlibstatic)
-        set(ZLIB_LIBRARIES zlibstatic)
-    elseif(TARGET zlib)
-        add_library(ZLIB::ZLIB ALIAS zlib)
-        set(ZLIB_INCLUDE_DIR "${zlib_SOURCE_DIR}")
-        set(ZLIB_LIBRARY zlib)
-        set(ZLIB_LIBRARIES zlib)
-    endif()
-endif()
+find_package(Python 3.8 REQUIRED COMPONENTS Interpreter Development)
+find_package(pybind11 REQUIRED)
 
 # Verify submodules are present
 set(CESIUM_NATIVE_DIR "${CMAKE_SOURCE_DIR}/extern/cesium-native")
@@ -59,17 +32,29 @@ add_subdirectory(extern/libzip EXCLUDE_FROM_ALL)
 message(STATUS "Adding cesium-native subdirectory...")
 add_subdirectory(extern/cesium-native EXCLUDE_FROM_ALL)
 
+# glm::glm should be an imported target after cesium-native's ezvcpkg runs.
+# However, when cmake is invoked without the vcpkg toolchain (e.g., via pip),
+# the vcpkg toolchain is set only in the cache after project() has been called,
+# so find_package(glm) inside cesium-native never actually creates the target.
+# Fetch glm directly as a fallback — it is header-only so there is no conflict.
+if(NOT TARGET glm::glm)
+    include(FetchContent)
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
+        cmake_policy(SET CMP0135 NEW)
+    endif()
+    fetchcontent_declare(
+        glm
+        URL https://github.com/g-truc/glm/releases/download/1.0.1/glm-1.0.1-light.zip
+        URL_HASH SHA256=9a995de4da09723bd33ef194e6b79818950e5a8f2e154792f02e4615277cfb8d
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    )
+    fetchcontent_makeavailable(glm)
+endif()
+
 if(DEFINED _BUILD_SHARED_LIBS_ORIG)
     set(BUILD_SHARED_LIBS ${_BUILD_SHARED_LIBS_ORIG} CACHE BOOL "Build shared libraries" FORCE)
 else()
     unset(BUILD_SHARED_LIBS CACHE)
-endif()
-
-# Base toolchain and package dependencies.
-find_package(Python 3.8 REQUIRED COMPONENTS Interpreter Development)
-find_package(pybind11 REQUIRED)
-if(NOT TARGET glm::glm)
-    find_package(glm CONFIG REQUIRED)
 endif()
 
 set(CESIUM_PYTHON_INCLUDE_DIRS
