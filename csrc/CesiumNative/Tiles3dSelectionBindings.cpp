@@ -4,18 +4,18 @@
 
 #include <Cesium3DTilesSelection/BoundingVolume.h>
 #include <Cesium3DTilesSelection/CesiumIonTilesetContentLoaderFactory.h>
-#include <Cesium3DTilesSelection/IModelMeshExportContentLoaderFactory.h>
-#include <Cesium3DTilesSelection/ITwinCesiumCuratedContentLoaderFactory.h>
-#include <Cesium3DTilesSelection/ITwinRealityDataContentLoaderFactory.h>
-#include <Cesium3DTilesSelection/RasterMappedTo3DTile.h>
 #include <Cesium3DTilesSelection/DebugTileStateDatabase.h>
 #include <Cesium3DTilesSelection/EllipsoidTilesetLoader.h>
 #include <Cesium3DTilesSelection/GltfModifier.h>
 #include <Cesium3DTilesSelection/GltfModifierState.h>
+#include <Cesium3DTilesSelection/IModelMeshExportContentLoaderFactory.h>
 #include <Cesium3DTilesSelection/IPrepareRendererResources.h>
 #include <Cesium3DTilesSelection/ITileExcluder.h>
 #include <Cesium3DTilesSelection/ITilesetHeightSampler.h>
+#include <Cesium3DTilesSelection/ITwinCesiumCuratedContentLoaderFactory.h>
+#include <Cesium3DTilesSelection/ITwinRealityDataContentLoaderFactory.h>
 #include <Cesium3DTilesSelection/LoadedTileEnumerator.h>
+#include <Cesium3DTilesSelection/RasterMappedTo3DTile.h>
 #include <Cesium3DTilesSelection/RasterOverlayCollection.h>
 #include <Cesium3DTilesSelection/RasterizedPolygonsTileExcluder.h>
 #include <Cesium3DTilesSelection/SampleHeightResult.h>
@@ -221,7 +221,6 @@ public:
         py::handle(static_cast<PyObject*>(ptr)));
   }
 
-
   CesiumAsync::Future<Cesium3DTilesSelection::TileLoadResultAndRenderResources>
   prepareInLoadThread(
       const CesiumAsync::AsyncSystem& asyncSystem,
@@ -356,7 +355,6 @@ public:
     } catch (...) {
     }
   }
-
 
   void* prepareRasterInLoadThread(
       CesiumGltf::ImageAsset& image,
@@ -1249,8 +1247,7 @@ void initTiles3dSelectionBindings(py::module& m) {
       Cesium3DTilesSelection::ITwinCesiumCuratedContentLoaderFactory,
       Cesium3DTilesSelection::TilesetContentLoaderFactory,
       std::shared_ptr<
-          Cesium3DTilesSelection::
-              ITwinCesiumCuratedContentLoaderFactory>>(
+          Cesium3DTilesSelection::ITwinCesiumCuratedContentLoaderFactory>>(
       m,
       "ITwinCesiumCuratedContentLoaderFactory")
       .def(
@@ -1262,22 +1259,19 @@ void initTiles3dSelectionBindings(py::module& m) {
       Cesium3DTilesSelection::ITwinRealityDataContentLoaderFactory,
       Cesium3DTilesSelection::TilesetContentLoaderFactory,
       std::shared_ptr<
-          Cesium3DTilesSelection::
-              ITwinRealityDataContentLoaderFactory>>(
+          Cesium3DTilesSelection::ITwinRealityDataContentLoaderFactory>>(
       m,
       "ITwinRealityDataContentLoaderFactory")
       .def(
-          py::init([](
-                       const std::string& realityDataId,
-                       const std::optional<std::string>& iTwinId,
-                       const std::string& iTwinAccessToken,
-                       const CesiumAsync::AsyncSystem& asyncSystem,
-                       py::function tokenRefreshCallback) {
-            auto cb =
-                [asyncSystem, pyCallback = std::move(tokenRefreshCallback)](
-                    const std::string& previousToken)
-                -> CesiumAsync::Future<
-                    CesiumUtility::Result<std::string>> {
+          py::init([](const std::string& realityDataId,
+                      const std::optional<std::string>& iTwinId,
+                      const std::string& iTwinAccessToken,
+                      const CesiumAsync::AsyncSystem& asyncSystem,
+                      py::function tokenRefreshCallback) {
+            auto cb = [asyncSystem,
+                       pyCallback = std::move(tokenRefreshCallback)](
+                          const std::string& previousToken)
+                -> CesiumAsync::Future<CesiumUtility::Result<std::string>> {
               py::gil_scoped_acquire gil;
               try {
                 py::str result = pyCallback(previousToken);
@@ -1291,8 +1285,7 @@ void initTiles3dSelectionBindings(py::module& m) {
               }
             };
             return std::make_shared<
-                Cesium3DTilesSelection::
-                    ITwinRealityDataContentLoaderFactory>(
+                Cesium3DTilesSelection::ITwinRealityDataContentLoaderFactory>(
                 realityDataId,
                 iTwinId,
                 iTwinAccessToken,
@@ -2493,22 +2486,19 @@ void initTiles3dSelectionBindings(py::module& m) {
           py::return_value_policy::reference_internal)
       .def_property_readonly(
           "texture_coordinate_id",
-          &Cesium3DTilesSelection::RasterMappedTo3DTile::
-              getTextureCoordinateID)
+          &Cesium3DTilesSelection::RasterMappedTo3DTile::getTextureCoordinateID)
       .def_property_readonly(
           "translation",
           [](py::object self_obj) {
-            auto& self =
-                self_obj
-                    .cast<const Cesium3DTilesSelection::RasterMappedTo3DTile&>();
+            auto& self = self_obj.cast<
+                const Cesium3DTilesSelection::RasterMappedTo3DTile&>();
             return toNumpyView(self.getTranslation(), self_obj);
           })
       .def_property_readonly(
           "scale",
           [](py::object self_obj) {
-            auto& self =
-                self_obj
-                    .cast<const Cesium3DTilesSelection::RasterMappedTo3DTile&>();
+            auto& self = self_obj.cast<
+                const Cesium3DTilesSelection::RasterMappedTo3DTile&>();
             return toNumpyView(self.getScale(), self_obj);
           })
       .def_property_readonly(
@@ -2516,8 +2506,7 @@ void initTiles3dSelectionBindings(py::module& m) {
           &Cesium3DTilesSelection::RasterMappedTo3DTile::getState)
       .def(
           "is_more_detail_available",
-          &Cesium3DTilesSelection::RasterMappedTo3DTile::
-              isMoreDetailAvailable)
+          &Cesium3DTilesSelection::RasterMappedTo3DTile::isMoreDetailAvailable)
       .def(
           "load_throttled",
           &Cesium3DTilesSelection::RasterMappedTo3DTile::loadThrottled);

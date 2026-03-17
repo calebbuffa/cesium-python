@@ -1693,11 +1693,12 @@ void initGeospatialBindings(py::module& m) {
          const CesiumGeometry::Rectangle& rectangle,
          double maxHeight,
          const CesiumGeospatial::Ellipsoid& ellipsoid) {
-        return toNumpy(CesiumGeospatial::computeProjectedRectangleSize(
-            projection,
-            rectangle,
-            maxHeight,
-            ellipsoid));
+        return toNumpy(
+            CesiumGeospatial::computeProjectedRectangleSize(
+                projection,
+                rectangle,
+                maxHeight,
+                ellipsoid));
       },
       py::arg("projection"),
       py::arg("rectangle"),

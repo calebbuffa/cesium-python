@@ -176,8 +176,7 @@ void initGltfReaderBindings(py::module& m) {
           [](const CesiumGltfReader::GltfReader& self,
              const CesiumAsync::AsyncSystem& asyncSystem,
              const std::string& url,
-             const std::shared_ptr<CesiumAsync::IAssetAccessor>&
-                 pAssetAccessor,
+             const std::shared_ptr<CesiumAsync::IAssetAccessor>& pAssetAccessor,
              const py::dict& headers,
              const CesiumGltfReader::GltfReaderOptions& options) {
             std::vector<CesiumAsync::IAssetAccessor::THeader> headerPairs;
@@ -211,8 +210,7 @@ void initGltfReaderBindings(py::module& m) {
           [](const CesiumGltfReader::GltfReader& self,
              const py::bytes& data,
              const CesiumAsync::AsyncSystem& asyncSystem,
-             const std::shared_ptr<CesiumAsync::IAssetAccessor>&
-                 pAssetAccessor,
+             const std::shared_ptr<CesiumAsync::IAssetAccessor>& pAssetAccessor,
              const py::dict& headers,
              const std::string& baseUrl,
              const CesiumGltfReader::GltfReaderOptions& options) {

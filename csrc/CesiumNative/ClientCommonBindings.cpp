@@ -129,8 +129,7 @@ void initClientCommonBindings(py::module& m) {
       .def_static(
           "authorize",
           [](const CesiumAsync::AsyncSystem& asyncSystem,
-             const std::shared_ptr<CesiumAsync::IAssetAccessor>&
-                 pAssetAccessor,
+             const std::shared_ptr<CesiumAsync::IAssetAccessor>& pAssetAccessor,
              const std::string& friendlyAppName,
              const CesiumClientCommon::OAuth2ClientOptions& clientOptions,
              const std::vector<std::string>& scopes,

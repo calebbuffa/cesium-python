@@ -1,10 +1,9 @@
+#include <CesiumGeospatial/Ellipsoid.h>
 #include <CesiumQuantizedMeshTerrain/AvailabilityRectangle.h>
 #include <CesiumQuantizedMeshTerrain/Layer.h>
 #include <CesiumQuantizedMeshTerrain/LayerReader.h>
 #include <CesiumQuantizedMeshTerrain/LayerWriter.h>
 #include <CesiumQuantizedMeshTerrain/QuantizedMeshLoader.h>
-
-#include <CesiumGeospatial/Ellipsoid.h>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -225,8 +224,7 @@ void initQuantizedMeshTerrainBindings(py::module& m) {
           py::arg("ellipsoid") = CesiumGeospatial::Ellipsoid::WGS84)
       .def_static(
           "load_metadata",
-          [](py::bytes data,
-             const CesiumGeometry::QuadtreeTileID& tileID) {
+          [](py::bytes data, const CesiumGeometry::QuadtreeTileID& tileID) {
             std::string bytes = data;
             return CesiumQuantizedMeshTerrain::QuantizedMeshLoader::
                 loadMetadata(

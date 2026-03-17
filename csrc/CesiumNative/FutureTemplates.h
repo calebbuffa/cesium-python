@@ -13,8 +13,7 @@ namespace py = pybind11;
 namespace CesiumPython {
 
 namespace detail {
-template <typename V>
-py::object toPyObject(V&& v) {
+template <typename V> py::object toPyObject(V&& v) {
   if constexpr (std::is_same_v<std::decay_t<V>, py::object>) {
     return std::forward<V>(v);
   } else {
@@ -60,35 +59,38 @@ auto bindFutureVoid(py::class_<FutureT>& cls) -> py::class_<FutureT>& {
                 });
           },
           py::arg("callback"))
-      .def("__await__", [](FutureT& self) {
-        py::module_ asyncio = py::module_::import("asyncio");
-        py::object loop = asyncio.attr("get_running_loop")();
-        py::object pyFuture = loop.attr("create_future")();
+      .def(
+          "__await__",
+          [](FutureT& self) {
+            py::module_ asyncio = py::module_::import("asyncio");
+            py::object loop = asyncio.attr("get_running_loop")();
+            py::object pyFuture = loop.attr("create_future")();
 
-        // Prevent captures from preventing GC until callback fires.
-        py::handle loopH = loop;
-        py::handle futH = pyFuture;
-        loopH.inc_ref();
-        futH.inc_ref();
+            // Prevent captures from preventing GC until callback fires.
+            py::handle loopH = loop;
+            py::handle futH = pyFuture;
+            loopH.inc_ref();
+            futH.inc_ref();
 
-        std::move(self)
-            .thenInWorkerThread([loopH, futH]() {
-              py::gil_scoped_acquire gil;
-              py::object l = py::reinterpret_steal<py::object>(loopH);
-              py::object f = py::reinterpret_steal<py::object>(futH);
-              l.attr("call_soon_threadsafe")(f.attr("set_result"), py::none());
-            })
-            .catchImmediately([loopH, futH](const std::exception& e) {
-              py::gil_scoped_acquire gil;
-              py::object l = py::reinterpret_steal<py::object>(loopH);
-              py::object f = py::reinterpret_steal<py::object>(futH);
-              l.attr("call_soon_threadsafe")(
-                  f.attr("set_exception"),
-                  py::module_::import("builtins")
-                      .attr("RuntimeError")(e.what()));
-            });
-        return pyFuture.attr("__await__")();
-      })
+            std::move(self)
+                .thenInWorkerThread([loopH, futH]() {
+                  py::gil_scoped_acquire gil;
+                  py::object l = py::reinterpret_steal<py::object>(loopH);
+                  py::object f = py::reinterpret_steal<py::object>(futH);
+                  l.attr(
+                      "call_soon_threadsafe")(f.attr("set_result"), py::none());
+                })
+                .catchImmediately([loopH, futH](const std::exception& e) {
+                  py::gil_scoped_acquire gil;
+                  py::object l = py::reinterpret_steal<py::object>(loopH);
+                  py::object f = py::reinterpret_steal<py::object>(futH);
+                  l.attr("call_soon_threadsafe")(
+                      f.attr("set_exception"),
+                      py::module_::import("builtins")
+                          .attr("RuntimeError")(e.what()));
+                });
+            return pyFuture.attr("__await__")();
+          })
       .def(
           "catch_in_main_thread",
           [](FutureT& self, py::function callback) {
@@ -140,36 +142,38 @@ auto bindFuture(
                 });
           },
           py::arg("callback"))
-      .def("__await__", [](FutureT& self) {
-        py::module_ asyncio = py::module_::import("asyncio");
-        py::object loop = asyncio.attr("get_running_loop")();
-        py::object pyFuture = loop.attr("create_future")();
+      .def(
+          "__await__",
+          [](FutureT& self) {
+            py::module_ asyncio = py::module_::import("asyncio");
+            py::object loop = asyncio.attr("get_running_loop")();
+            py::object pyFuture = loop.attr("create_future")();
 
-        py::handle loopH = loop;
-        py::handle futH = pyFuture;
-        loopH.inc_ref();
-        futH.inc_ref();
+            py::handle loopH = loop;
+            py::handle futH = pyFuture;
+            loopH.inc_ref();
+            futH.inc_ref();
 
-        std::move(self)
-            .thenInWorkerThread([loopH, futH](auto value) {
-              py::gil_scoped_acquire gil;
-              py::object l = py::reinterpret_steal<py::object>(loopH);
-              py::object f = py::reinterpret_steal<py::object>(futH);
-              l.attr("call_soon_threadsafe")(
-                  f.attr("set_result"),
-                  detail::toPyObject(std::move(value)));
-            })
-            .catchImmediately([loopH, futH](const std::exception& e) {
-              py::gil_scoped_acquire gil;
-              py::object l = py::reinterpret_steal<py::object>(loopH);
-              py::object f = py::reinterpret_steal<py::object>(futH);
-              l.attr("call_soon_threadsafe")(
-                  f.attr("set_exception"),
-                  py::module_::import("builtins")
-                      .attr("RuntimeError")(e.what()));
-            });
-        return pyFuture.attr("__await__")();
-      })
+            std::move(self)
+                .thenInWorkerThread([loopH, futH](auto value) {
+                  py::gil_scoped_acquire gil;
+                  py::object l = py::reinterpret_steal<py::object>(loopH);
+                  py::object f = py::reinterpret_steal<py::object>(futH);
+                  l.attr("call_soon_threadsafe")(
+                      f.attr("set_result"),
+                      detail::toPyObject(std::move(value)));
+                })
+                .catchImmediately([loopH, futH](const std::exception& e) {
+                  py::gil_scoped_acquire gil;
+                  py::object l = py::reinterpret_steal<py::object>(loopH);
+                  py::object f = py::reinterpret_steal<py::object>(futH);
+                  l.attr("call_soon_threadsafe")(
+                      f.attr("set_exception"),
+                      py::module_::import("builtins")
+                          .attr("RuntimeError")(e.what()));
+                });
+            return pyFuture.attr("__await__")();
+          })
       .def(
           "catch_in_main_thread",
           [](FutureT& self, py::function callback) {
@@ -219,33 +223,36 @@ auto bindSharedFutureVoid(py::class_<SFutureT>& cls) -> py::class_<SFutureT>& {
             });
           },
           py::arg("callback"))
-      .def("__await__", [](SFutureT& self) {
-        py::module_ asyncio = py::module_::import("asyncio");
-        py::object loop = asyncio.attr("get_running_loop")();
-        py::object pyFuture = loop.attr("create_future")();
+      .def(
+          "__await__",
+          [](SFutureT& self) {
+            py::module_ asyncio = py::module_::import("asyncio");
+            py::object loop = asyncio.attr("get_running_loop")();
+            py::object pyFuture = loop.attr("create_future")();
 
-        py::handle loopH = loop;
-        py::handle futH = pyFuture;
-        loopH.inc_ref();
-        futH.inc_ref();
+            py::handle loopH = loop;
+            py::handle futH = pyFuture;
+            loopH.inc_ref();
+            futH.inc_ref();
 
-        self.thenInWorkerThread([loopH, futH]() {
-              py::gil_scoped_acquire gil;
-              py::object l = py::reinterpret_steal<py::object>(loopH);
-              py::object f = py::reinterpret_steal<py::object>(futH);
-              l.attr("call_soon_threadsafe")(f.attr("set_result"), py::none());
-            })
-            .catchImmediately([loopH, futH](const std::exception& e) {
-              py::gil_scoped_acquire gil;
-              py::object l = py::reinterpret_steal<py::object>(loopH);
-              py::object f = py::reinterpret_steal<py::object>(futH);
-              l.attr("call_soon_threadsafe")(
-                  f.attr("set_exception"),
-                  py::module_::import("builtins")
-                      .attr("RuntimeError")(e.what()));
-            });
-        return pyFuture.attr("__await__")();
-      })
+            self.thenInWorkerThread([loopH, futH]() {
+                  py::gil_scoped_acquire gil;
+                  py::object l = py::reinterpret_steal<py::object>(loopH);
+                  py::object f = py::reinterpret_steal<py::object>(futH);
+                  l.attr(
+                      "call_soon_threadsafe")(f.attr("set_result"), py::none());
+                })
+                .catchImmediately([loopH, futH](const std::exception& e) {
+                  py::gil_scoped_acquire gil;
+                  py::object l = py::reinterpret_steal<py::object>(loopH);
+                  py::object f = py::reinterpret_steal<py::object>(futH);
+                  l.attr("call_soon_threadsafe")(
+                      f.attr("set_exception"),
+                      py::module_::import("builtins")
+                          .attr("RuntimeError")(e.what()));
+                });
+            return pyFuture.attr("__await__")();
+          })
       .def(
           "catch_in_main_thread",
           [](SFutureT& self, py::function callback) {
@@ -295,35 +302,37 @@ auto bindSharedFuture(
                 });
           },
           py::arg("callback"))
-      .def("__await__", [](SFutureT& self) {
-        py::module_ asyncio = py::module_::import("asyncio");
-        py::object loop = asyncio.attr("get_running_loop")();
-        py::object pyFuture = loop.attr("create_future")();
+      .def(
+          "__await__",
+          [](SFutureT& self) {
+            py::module_ asyncio = py::module_::import("asyncio");
+            py::object loop = asyncio.attr("get_running_loop")();
+            py::object pyFuture = loop.attr("create_future")();
 
-        py::handle loopH = loop;
-        py::handle futH = pyFuture;
-        loopH.inc_ref();
-        futH.inc_ref();
+            py::handle loopH = loop;
+            py::handle futH = pyFuture;
+            loopH.inc_ref();
+            futH.inc_ref();
 
-        self.thenInWorkerThread([loopH, futH](auto value) {
-              py::gil_scoped_acquire gil;
-              py::object l = py::reinterpret_steal<py::object>(loopH);
-              py::object f = py::reinterpret_steal<py::object>(futH);
-              l.attr("call_soon_threadsafe")(
-                  f.attr("set_result"),
-                  detail::toPyObject(std::move(value)));
-            })
-            .catchImmediately([loopH, futH](const std::exception& e) {
-              py::gil_scoped_acquire gil;
-              py::object l = py::reinterpret_steal<py::object>(loopH);
-              py::object f = py::reinterpret_steal<py::object>(futH);
-              l.attr("call_soon_threadsafe")(
-                  f.attr("set_exception"),
-                  py::module_::import("builtins")
-                      .attr("RuntimeError")(e.what()));
-            });
-        return pyFuture.attr("__await__")();
-      })
+            self.thenInWorkerThread([loopH, futH](auto value) {
+                  py::gil_scoped_acquire gil;
+                  py::object l = py::reinterpret_steal<py::object>(loopH);
+                  py::object f = py::reinterpret_steal<py::object>(futH);
+                  l.attr("call_soon_threadsafe")(
+                      f.attr("set_result"),
+                      detail::toPyObject(std::move(value)));
+                })
+                .catchImmediately([loopH, futH](const std::exception& e) {
+                  py::gil_scoped_acquire gil;
+                  py::object l = py::reinterpret_steal<py::object>(loopH);
+                  py::object f = py::reinterpret_steal<py::object>(futH);
+                  l.attr("call_soon_threadsafe")(
+                      f.attr("set_exception"),
+                      py::module_::import("builtins")
+                          .attr("RuntimeError")(e.what()));
+                });
+            return pyFuture.attr("__await__")();
+          })
       .def(
           "catch_in_main_thread",
           [](SFutureT& self, py::function callback) {

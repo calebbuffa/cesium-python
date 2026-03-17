@@ -748,9 +748,7 @@ void initTiles3dContentBindings(py::module& m) {
             {
               py::gil_scoped_release release;
               for (py::ssize_t i = 0; i < n; ++i) {
-                out[i] = self.isTileAvailable(
-                    relativeTileLevel,
-                    ids(i));
+                out[i] = self.isTileAvailable(relativeTileLevel, ids(i));
               }
             }
             return result;

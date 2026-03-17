@@ -847,12 +847,11 @@ void initAsyncBindings(py::module& m) {
   // C++ API return types.
   auto futureCls = py::class_<FutureObject>(m, "Future");
   CesiumPython::bindFuture(futureCls);
-  futureCls.def_static(
-      "__class_getitem__",
-      [futureCls](py::object /* item */) { return futureCls; });
+  futureCls.def_static("__class_getitem__", [futureCls](py::object /* item */) {
+    return futureCls;
+  });
 
-  auto sharedFutureCls =
-      py::class_<SharedFutureObject>(m, "SharedFuture");
+  auto sharedFutureCls = py::class_<SharedFutureObject>(m, "SharedFuture");
   CesiumPython::bindSharedFuture(sharedFutureCls);
   sharedFutureCls.def_static(
       "__class_getitem__",

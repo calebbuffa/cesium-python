@@ -215,10 +215,9 @@ py::object arrayColumnToList(
 // Convert a single PropertyArrayView<T> or PropertyArrayCopy<T> element to a
 // Python object.  Factored out so MSVC only instantiates it for actual array
 // element types.
-template <typename ArrayT>
-py::object propertyArrayToObject(const ArrayT& arr) {
-  using T = std::remove_cv_t<
-      std::remove_reference_t<decltype(arr[int64_t{0}])>>;
+template <typename ArrayT> py::object propertyArrayToObject(const ArrayT& arr) {
+  using T =
+      std::remove_cv_t<std::remove_reference_t<decltype(arr[int64_t{0}])>>;
   const auto len = arr.size();
   if constexpr (std::is_same_v<T, bool>) {
     py::list result(len);
@@ -244,8 +243,7 @@ py::object propertyArrayToObject(const ArrayT& arr) {
     return py::object(std::move(np));
   } else if constexpr (is_glm_mat<T>::value) {
     constexpr auto C = T::length();
-    constexpr auto R =
-        static_cast<glm::length_t>(T::col_type::length());
+    constexpr auto R = static_cast<glm::length_t>(T::col_type::length());
     using Scalar = typename T::value_type;
     py::array_t<Scalar> np(
         {static_cast<py::ssize_t>(len),

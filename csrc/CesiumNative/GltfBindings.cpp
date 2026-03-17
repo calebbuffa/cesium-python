@@ -23,17 +23,17 @@
 #include <CesiumGltf/ClassProperty.h>
 #include <CesiumGltf/Enum.h>
 #include <CesiumGltf/EnumValue.h>
+#include <CesiumGltf/ExtensionCesiumRTC.h>
 #include <CesiumGltf/ExtensionExtInstanceFeatures.h>
 #include <CesiumGltf/ExtensionExtInstanceFeaturesFeatureId.h>
 #include <CesiumGltf/ExtensionExtMeshFeatures.h>
 #include <CesiumGltf/ExtensionExtMeshGpuInstancing.h>
-#include <CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h>
-#include <CesiumGltf/ExtensionModelExtStructuralMetadata.h>
-#include <CesiumGltf/ExtensionCesiumRTC.h>
 #include <CesiumGltf/ExtensionKhrGaussianSplatting.h>
 #include <CesiumGltf/ExtensionKhrGaussianSplattingCompressionSpz2.h>
 #include <CesiumGltf/ExtensionKhrGaussianSplattingHintsValue.h>
 #include <CesiumGltf/ExtensionKhrMaterialsUnlit.h>
+#include <CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h>
+#include <CesiumGltf/ExtensionModelExtStructuralMetadata.h>
 #include <CesiumGltf/FeatureId.h>
 #include <CesiumGltf/FeatureIdTexture.h>
 #include <CesiumGltf/Image.h>
@@ -79,8 +79,7 @@ namespace py = pybind11;
 // ── AccessorView helpers (namespace scope for MSVC compat) ──────────────
 
 // Number of scalar components for a glTF accessor element type.
-template <typename T>
-struct NumComponents {
+template <typename T> struct NumComponents {
   static constexpr py::ssize_t value = [] {
     if constexpr (std::is_arithmetic_v<T>)
       return 1;
@@ -101,12 +100,10 @@ struct NumComponents {
 };
 
 // Scalar component type: T itself for arithmetic, T::value_type for glm.
-template <typename T, typename = void>
-struct ScalarOfT {
+template <typename T, typename = void> struct ScalarOfT {
   using type = T;
 };
-template <typename T>
-struct ScalarOfT<T, std::void_t<typename T::value_type>> {
+template <typename T> struct ScalarOfT<T, std::void_t<typename T::value_type>> {
   using type = typename T::value_type;
 };
 
@@ -391,8 +388,8 @@ void initGltfBindings(py::module& m) {
           py::arg("model"))
       .def("__repr__", [](const CesiumGltf::Accessor& self) {
         return "Accessor(name='" + self.name +
-               "', count=" + std::to_string(self.count) +
-               ", type='" + self.type + "')";
+               "', count=" + std::to_string(self.count) + ", type='" +
+               self.type + "')";
       });
 
   py::class_<CesiumGltf::Accessor::ComponentType>(accessorCls, "ComponentType")
@@ -417,19 +414,15 @@ void initGltfBindings(py::module& m) {
           [](py::object) {
             return CesiumGltf::Accessor::ComponentType::UNSIGNED_INT;
           })
-      .def_property_readonly_static("FLOAT", [](py::object) {
-        return CesiumGltf::Accessor::ComponentType::FLOAT;
-      })
+      .def_property_readonly_static(
+          "FLOAT",
+          [](py::object) { return CesiumGltf::Accessor::ComponentType::FLOAT; })
       .def_property_readonly_static(
           "INT",
-          [](py::object) {
-            return CesiumGltf::Accessor::ComponentType::INT;
-          })
+          [](py::object) { return CesiumGltf::Accessor::ComponentType::INT; })
       .def_property_readonly_static(
           "INT64",
-          [](py::object) {
-            return CesiumGltf::Accessor::ComponentType::INT64;
-          })
+          [](py::object) { return CesiumGltf::Accessor::ComponentType::INT64; })
       .def_property_readonly_static(
           "UNSIGNED_INT64",
           [](py::object) {
@@ -469,8 +462,8 @@ void initGltfBindings(py::module& m) {
       .def_readwrite("version", &CesiumGltf::Asset::version)
       .def_readwrite("min_version", &CesiumGltf::Asset::minVersion)
       .def("__repr__", [](const CesiumGltf::Asset& self) {
-        return "Asset(version='" + self.version +
-               "', generator='" + self.generator.value_or("") + "')";
+        return "Asset(version='" + self.version + "', generator='" +
+               self.generator.value_or("") + "')";
       });
 
   py::class_<CesiumGltf::TextureInfo>(m, "TextureInfo")
@@ -588,8 +581,8 @@ void initGltfBindings(py::module& m) {
       .def_property_readonly(
           "ext_khr_gaussian_splatting",
           [](CesiumGltf::MeshPrimitive& self) -> py::object {
-            auto* ext = self.getExtension<
-                CesiumGltf::ExtensionKhrGaussianSplatting>();
+            auto* ext =
+                self.getExtension<CesiumGltf::ExtensionKhrGaussianSplatting>();
             if (!ext)
               return py::none();
             return py::cast(*ext, py::return_value_policy::copy);
@@ -675,9 +668,7 @@ void initGltfBindings(py::module& m) {
   py::class_<CesiumGltf::Sampler::MagFilter>(samplerCls, "MagFilter")
       .def_property_readonly_static(
           "NEAREST",
-          [](py::object) {
-            return CesiumGltf::Sampler::MagFilter::NEAREST;
-          })
+          [](py::object) { return CesiumGltf::Sampler::MagFilter::NEAREST; })
       .def_property_readonly_static("LINEAR", [](py::object) {
         return CesiumGltf::Sampler::MagFilter::LINEAR;
       });
@@ -685,14 +676,10 @@ void initGltfBindings(py::module& m) {
   py::class_<CesiumGltf::Sampler::MinFilter>(samplerCls, "MinFilter")
       .def_property_readonly_static(
           "NEAREST",
-          [](py::object) {
-            return CesiumGltf::Sampler::MinFilter::NEAREST;
-          })
+          [](py::object) { return CesiumGltf::Sampler::MinFilter::NEAREST; })
       .def_property_readonly_static(
           "LINEAR",
-          [](py::object) {
-            return CesiumGltf::Sampler::MinFilter::LINEAR;
-          })
+          [](py::object) { return CesiumGltf::Sampler::MinFilter::LINEAR; })
       .def_property_readonly_static(
           "NEAREST_MIPMAP_NEAREST",
           [](py::object) {
@@ -708,18 +695,14 @@ void initGltfBindings(py::module& m) {
           [](py::object) {
             return CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_LINEAR;
           })
-      .def_property_readonly_static(
-          "LINEAR_MIPMAP_LINEAR",
-          [](py::object) {
-            return CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
-          });
+      .def_property_readonly_static("LINEAR_MIPMAP_LINEAR", [](py::object) {
+        return CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
+      });
 
   py::class_<CesiumGltf::Sampler::WrapS>(samplerCls, "WrapS")
       .def_property_readonly_static(
           "CLAMP_TO_EDGE",
-          [](py::object) {
-            return CesiumGltf::Sampler::WrapS::CLAMP_TO_EDGE;
-          })
+          [](py::object) { return CesiumGltf::Sampler::WrapS::CLAMP_TO_EDGE; })
       .def_property_readonly_static(
           "MIRRORED_REPEAT",
           [](py::object) {
@@ -732,9 +715,7 @@ void initGltfBindings(py::module& m) {
   py::class_<CesiumGltf::Sampler::WrapT>(samplerCls, "WrapT")
       .def_property_readonly_static(
           "CLAMP_TO_EDGE",
-          [](py::object) {
-            return CesiumGltf::Sampler::WrapT::CLAMP_TO_EDGE;
-          })
+          [](py::object) { return CesiumGltf::Sampler::WrapT::CLAMP_TO_EDGE; })
       .def_property_readonly_static(
           "MIRRORED_REPEAT",
           [](py::object) {
@@ -759,8 +740,8 @@ void initGltfBindings(py::module& m) {
       .def_property_readonly(
           "ext_mesh_gpu_instancing",
           [](CesiumGltf::Node& self) -> py::object {
-            auto* ext = self.getExtension<
-                CesiumGltf::ExtensionExtMeshGpuInstancing>();
+            auto* ext =
+                self.getExtension<CesiumGltf::ExtensionExtMeshGpuInstancing>();
             if (!ext)
               return py::none();
             return py::cast(*ext, py::return_value_policy::copy);
@@ -816,8 +797,7 @@ void initGltfBindings(py::module& m) {
       .def_readwrite("perspective", &CesiumGltf::Camera::perspective)
       .def_readwrite("type", &CesiumGltf::Camera::type)
       .def("__repr__", [](const CesiumGltf::Camera& self) {
-        return "GltfCamera(name='" + self.name +
-               "', type='" + self.type + "')";
+        return "GltfCamera(name='" + self.name + "', type='" + self.type + "')";
       });
 
   py::class_<CesiumGltf::Camera::Type>(cameraCls, "Type")
@@ -949,28 +929,22 @@ void initGltfBindings(py::module& m) {
           "ClassProperty")
           .def(py::init<>())
           .def_readwrite("name", &CesiumGltf::ClassProperty::name)
-          .def_readwrite(
-              "description",
-              &CesiumGltf::ClassProperty::description)
+          .def_readwrite("description", &CesiumGltf::ClassProperty::description)
           .def_readwrite("type", &CesiumGltf::ClassProperty::type)
           .def_readwrite(
               "component_type",
               &CesiumGltf::ClassProperty::componentType)
-          .def_readwrite(
-              "enum_type",
-              &CesiumGltf::ClassProperty::enumType)
+          .def_readwrite("enum_type", &CesiumGltf::ClassProperty::enumType)
           .def_readwrite("array", &CesiumGltf::ClassProperty::array)
           .def_readwrite("count", &CesiumGltf::ClassProperty::count)
-          .def_readwrite(
-              "normalized",
-              &CesiumGltf::ClassProperty::normalized)
+          .def_readwrite("normalized", &CesiumGltf::ClassProperty::normalized)
           .def_readwrite("required", &CesiumGltf::ClassProperty::required)
           .def_readwrite("semantic", &CesiumGltf::ClassProperty::semantic);
 
   auto jsonProp = [&clsProp](
                       const char* pyName,
                       std::optional<CesiumUtility::JsonValue>
-                          CesiumGltf::ClassProperty::*member) {
+                          CesiumGltf::ClassProperty::* member) {
     clsProp.def_property(
         pyName,
         [member](const CesiumGltf::ClassProperty& self) -> py::object {
@@ -1027,13 +1001,11 @@ void initGltfBindings(py::module& m) {
       .def_property_readonly_static(
           "BOOLEAN",
           [](py::object) { return CesiumGltf::ClassProperty::Type::BOOLEAN; })
-      .def_property_readonly_static(
-          "ENUM",
-          [](py::object) { return CesiumGltf::ClassProperty::Type::ENUM; });
+      .def_property_readonly_static("ENUM", [](py::object) {
+        return CesiumGltf::ClassProperty::Type::ENUM;
+      });
 
-  py::class_<CesiumGltf::ClassProperty::ComponentType>(
-      clsProp,
-      "ComponentType")
+  py::class_<CesiumGltf::ClassProperty::ComponentType>(clsProp, "ComponentType")
       .def_property_readonly_static(
           "INT8",
           [](py::object) {
@@ -1079,11 +1051,9 @@ void initGltfBindings(py::module& m) {
           [](py::object) {
             return CesiumGltf::ClassProperty::ComponentType::FLOAT32;
           })
-      .def_property_readonly_static(
-          "FLOAT64",
-          [](py::object) {
-            return CesiumGltf::ClassProperty::ComponentType::FLOAT64;
-          });
+      .def_property_readonly_static("FLOAT64", [](py::object) {
+        return CesiumGltf::ClassProperty::ComponentType::FLOAT64;
+      });
 
   py::class_<CesiumGltf::Class, CesiumUtility::ExtensibleObject>(
       m,
@@ -1204,11 +1174,13 @@ void initGltfBindings(py::module& m) {
           },
           py::arg("scene_id"),
           py::arg("callback"))
-      .def("__repr__", [](const CesiumGltf::Model& self) {
-        return "Model(meshes=" + std::to_string(self.meshes.size()) +
-               ", materials=" + std::to_string(self.materials.size()) +
-               ", nodes=" + std::to_string(self.nodes.size()) + ")";
-      })
+      .def(
+          "__repr__",
+          [](const CesiumGltf::Model& self) {
+            return "Model(meshes=" + std::to_string(self.meshes.size()) +
+                   ", materials=" + std::to_string(self.materials.size()) +
+                   ", nodes=" + std::to_string(self.nodes.size()) + ")";
+          })
       .def_property_readonly(
           "ext_structural_metadata",
           [](CesiumGltf::Model& self) -> py::object {
@@ -1222,16 +1194,14 @@ void initGltfBindings(py::module& m) {
           "get_or_create_ext_structural_metadata",
           [](CesiumGltf::Model& self)
               -> CesiumGltf::ExtensionModelExtStructuralMetadata& {
-            return self
-                .addExtension<
-                    CesiumGltf::ExtensionModelExtStructuralMetadata>();
+            return self.addExtension<
+                CesiumGltf::ExtensionModelExtStructuralMetadata>();
           },
           py::return_value_policy::reference_internal)
       .def_property_readonly(
           "ext_cesium_rtc",
           [](CesiumGltf::Model& self) -> py::object {
-            auto* ext =
-                self.getExtension<CesiumGltf::ExtensionCesiumRTC>();
+            auto* ext = self.getExtension<CesiumGltf::ExtensionCesiumRTC>();
             if (!ext)
               return py::none();
             return py::cast(*ext, py::return_value_policy::copy);
@@ -1239,7 +1209,8 @@ void initGltfBindings(py::module& m) {
 
   {
     auto vas = py::class_<CesiumGltf::VertexAttributeSemantics>(
-                   m, "VertexAttributeSemantics")
+                   m,
+                   "VertexAttributeSemantics")
                    .def_property_readonly_static(
                        "POSITION",
                        [](py::object) {
@@ -1250,50 +1221,47 @@ void initGltfBindings(py::module& m) {
                        [](py::object) {
                          return CesiumGltf::VertexAttributeSemantics::NORMAL;
                        })
-                   .def_property_readonly_static(
-                       "TANGENT",
-                       [](py::object) {
-                         return CesiumGltf::VertexAttributeSemantics::TANGENT;
-                       });
+                   .def_property_readonly_static("TANGENT", [](py::object) {
+                     return CesiumGltf::VertexAttributeSemantics::TANGENT;
+                   });
 
     // Bind the indexed attributes: TEXCOORD_0..7, COLOR_0..7, etc.
-    auto bindIndexed =
-        [&](const char* name, const std::array<std::string, 8>& arr) {
-          vas.def_static(
-              name,
-              [arr](int index) -> std::string {
-                if (index < 0 || index >= 8)
-                  throw py::index_error("index must be 0..7");
-                return arr[index];
-              },
-              py::arg("index") = 0);
-        };
-    bindIndexed(
-        "TEXCOORD", CesiumGltf::VertexAttributeSemantics::TEXCOORD_n);
+    auto bindIndexed = [&](const char* name,
+                           const std::array<std::string, 8>& arr) {
+      vas.def_static(
+          name,
+          [arr](int index) -> std::string {
+            if (index < 0 || index >= 8)
+              throw py::index_error("index must be 0..7");
+            return arr[index];
+          },
+          py::arg("index") = 0);
+    };
+    bindIndexed("TEXCOORD", CesiumGltf::VertexAttributeSemantics::TEXCOORD_n);
     bindIndexed("COLOR", CesiumGltf::VertexAttributeSemantics::COLOR_n);
     bindIndexed("JOINTS", CesiumGltf::VertexAttributeSemantics::JOINTS_n);
-    bindIndexed(
-        "WEIGHTS", CesiumGltf::VertexAttributeSemantics::WEIGHTS_n);
+    bindIndexed("WEIGHTS", CesiumGltf::VertexAttributeSemantics::WEIGHTS_n);
     bindIndexed(
         "FEATURE_ID",
         CesiumGltf::VertexAttributeSemantics::FEATURE_ID_n);
   }
 
-
-  py::class_<CesiumGltf::ExtensionKhrMaterialsUnlit,
-             CesiumUtility::ExtensibleObject>(m, "ExtKhrMaterialsUnlit")
+  py::class_<
+      CesiumGltf::ExtensionKhrMaterialsUnlit,
+      CesiumUtility::ExtensibleObject>(m, "ExtKhrMaterialsUnlit")
       .def(py::init<>())
-      .def_property_readonly_static(
-          "EXTENSION_NAME",
-          [](py::object) {
-            return CesiumGltf::ExtensionKhrMaterialsUnlit::ExtensionName;
-          });
+      .def_property_readonly_static("EXTENSION_NAME", [](py::object) {
+        return CesiumGltf::ExtensionKhrMaterialsUnlit::ExtensionName;
+      });
 
-  py::class_<CesiumGltf::ExtensionKhrGaussianSplatting,
-             CesiumUtility::ExtensibleObject>
+  py::class_<
+      CesiumGltf::ExtensionKhrGaussianSplatting,
+      CesiumUtility::ExtensibleObject>
       extGsCls(m, "ExtKhrGaussianSplatting");
   extGsCls.def(py::init<>())
-      .def_readwrite("kernel", &CesiumGltf::ExtensionKhrGaussianSplatting::kernel)
+      .def_readwrite(
+          "kernel",
+          &CesiumGltf::ExtensionKhrGaussianSplatting::kernel)
       .def_readwrite(
           "color_space",
           &CesiumGltf::ExtensionKhrGaussianSplatting::colorSpace)
@@ -1303,56 +1271,50 @@ void initGltfBindings(py::module& m) {
       .def_readwrite(
           "sorting_method",
           &CesiumGltf::ExtensionKhrGaussianSplatting::sortingMethod)
-      .def_property_readonly_static(
-          "EXTENSION_NAME",
-          [](py::object) {
-            return CesiumGltf::ExtensionKhrGaussianSplatting::ExtensionName;
-          });
+      .def_property_readonly_static("EXTENSION_NAME", [](py::object) {
+        return CesiumGltf::ExtensionKhrGaussianSplatting::ExtensionName;
+      });
 
   py::class_<CesiumGltf::ExtensionKhrGaussianSplatting::Kernel>(
-      extGsCls, "Kernel")
-      .def_property_readonly_static(
-          "ellipse",
-          [](py::object) {
-            return CesiumGltf::ExtensionKhrGaussianSplatting::Kernel::ellipse;
-          });
+      extGsCls,
+      "Kernel")
+      .def_property_readonly_static("ellipse", [](py::object) {
+        return CesiumGltf::ExtensionKhrGaussianSplatting::Kernel::ellipse;
+      });
 
   py::class_<CesiumGltf::ExtensionKhrGaussianSplatting::ColorSpace>(
-      extGsCls, "ColorSpace")
+      extGsCls,
+      "ColorSpace")
       .def_property_readonly_static(
           "srgb_rec709_display",
           [](py::object) {
             return CesiumGltf::ExtensionKhrGaussianSplatting::ColorSpace::
                 srgb_rec709_display;
           })
-      .def_property_readonly_static(
-          "lin_rec709_display",
-          [](py::object) {
-            return CesiumGltf::ExtensionKhrGaussianSplatting::ColorSpace::
-                lin_rec709_display;
-          });
+      .def_property_readonly_static("lin_rec709_display", [](py::object) {
+        return CesiumGltf::ExtensionKhrGaussianSplatting::ColorSpace::
+            lin_rec709_display;
+      });
 
   py::class_<CesiumGltf::ExtensionKhrGaussianSplatting::Projection>(
-      extGsCls, "Projection")
-      .def_property_readonly_static(
-          "perspective",
-          [](py::object) {
-            return CesiumGltf::ExtensionKhrGaussianSplatting::Projection::
-                perspective;
-          });
+      extGsCls,
+      "Projection")
+      .def_property_readonly_static("perspective", [](py::object) {
+        return CesiumGltf::ExtensionKhrGaussianSplatting::Projection::
+            perspective;
+      });
 
   py::class_<CesiumGltf::ExtensionKhrGaussianSplatting::SortingMethod>(
-      extGsCls, "SortingMethod")
-      .def_property_readonly_static(
-          "cameraDistance",
-          [](py::object) {
-            return CesiumGltf::ExtensionKhrGaussianSplatting::SortingMethod::
-                cameraDistance;
-          });
+      extGsCls,
+      "SortingMethod")
+      .def_property_readonly_static("cameraDistance", [](py::object) {
+        return CesiumGltf::ExtensionKhrGaussianSplatting::SortingMethod::
+            cameraDistance;
+      });
 
-  py::class_<CesiumGltf::ExtensionKhrGaussianSplattingHintsValue,
-             CesiumUtility::ExtensibleObject>(
-      m, "ExtKhrGaussianSplattingHintsValue")
+  py::class_<
+      CesiumGltf::ExtensionKhrGaussianSplattingHintsValue,
+      CesiumUtility::ExtensibleObject>(m, "ExtKhrGaussianSplattingHintsValue")
       .def(py::init<>())
       .def_readwrite(
           "projection",
@@ -1361,38 +1323,35 @@ void initGltfBindings(py::module& m) {
           "sorting_method",
           &CesiumGltf::ExtensionKhrGaussianSplattingHintsValue::sortingMethod);
 
-  py::class_<CesiumGltf::ExtensionKhrGaussianSplattingCompressionSpz2,
-             CesiumUtility::ExtensibleObject>(
-      m, "ExtKhrGaussianSplattingCompressionSpz2")
+  py::class_<
+      CesiumGltf::ExtensionKhrGaussianSplattingCompressionSpz2,
+      CesiumUtility::ExtensibleObject>(
+      m,
+      "ExtKhrGaussianSplattingCompressionSpz2")
       .def(py::init<>())
       .def_readwrite(
           "buffer_view",
-          &CesiumGltf::ExtensionKhrGaussianSplattingCompressionSpz2::
-              bufferView)
-      .def_property_readonly_static(
-          "EXTENSION_NAME",
-          [](py::object) {
-            return CesiumGltf::ExtensionKhrGaussianSplattingCompressionSpz2::
-                ExtensionName;
-          });
+          &CesiumGltf::ExtensionKhrGaussianSplattingCompressionSpz2::bufferView)
+      .def_property_readonly_static("EXTENSION_NAME", [](py::object) {
+        return CesiumGltf::ExtensionKhrGaussianSplattingCompressionSpz2::
+            ExtensionName;
+      });
 
-  py::class_<CesiumGltf::ExtensionCesiumRTC,
-             CesiumUtility::ExtensibleObject>(m, "ExtCesiumRTC")
+  py::class_<CesiumGltf::ExtensionCesiumRTC, CesiumUtility::ExtensibleObject>(
+      m,
+      "ExtCesiumRTC")
       .def(py::init<>())
       .def_readwrite("center", &CesiumGltf::ExtensionCesiumRTC::center)
-      .def_property_readonly_static(
-          "EXTENSION_NAME",
-          [](py::object) {
-            return CesiumGltf::ExtensionCesiumRTC::ExtensionName;
-          });
+      .def_property_readonly_static("EXTENSION_NAME", [](py::object) {
+        return CesiumGltf::ExtensionCesiumRTC::ExtensionName;
+      });
 
   auto propTableProp =
-      py::class_<CesiumGltf::PropertyTableProperty,
-                 CesiumUtility::ExtensibleObject>(m, "PropertyTableProperty")
+      py::class_<
+          CesiumGltf::PropertyTableProperty,
+          CesiumUtility::ExtensibleObject>(m, "PropertyTableProperty")
           .def(py::init<>())
-          .def_readwrite(
-              "values",
-              &CesiumGltf::PropertyTableProperty::values)
+          .def_readwrite("values", &CesiumGltf::PropertyTableProperty::values)
           .def_readwrite(
               "array_offsets",
               &CesiumGltf::PropertyTableProperty::arrayOffsets)
@@ -1407,8 +1366,7 @@ void initGltfBindings(py::module& m) {
               &CesiumGltf::PropertyTableProperty::stringOffsetType)
           .def_property(
               "offset",
-              [](const CesiumGltf::PropertyTableProperty& self)
-                  -> py::object {
+              [](const CesiumGltf::PropertyTableProperty& self) -> py::object {
                 if (!self.offset)
                   return py::none();
                 return CesiumPython::jsonValueToPy(*self.offset);
@@ -1421,8 +1379,7 @@ void initGltfBindings(py::module& m) {
               })
           .def_property(
               "scale",
-              [](const CesiumGltf::PropertyTableProperty& self)
-                  -> py::object {
+              [](const CesiumGltf::PropertyTableProperty& self) -> py::object {
                 if (!self.scale)
                   return py::none();
                 return CesiumPython::jsonValueToPy(*self.scale);
@@ -1435,8 +1392,7 @@ void initGltfBindings(py::module& m) {
               })
           .def_property(
               "max",
-              [](const CesiumGltf::PropertyTableProperty& self)
-                  -> py::object {
+              [](const CesiumGltf::PropertyTableProperty& self) -> py::object {
                 if (!self.max)
                   return py::none();
                 return CesiumPython::jsonValueToPy(*self.max);
@@ -1449,8 +1405,7 @@ void initGltfBindings(py::module& m) {
               })
           .def_property(
               "min",
-              [](const CesiumGltf::PropertyTableProperty& self)
-                  -> py::object {
+              [](const CesiumGltf::PropertyTableProperty& self) -> py::object {
                 if (!self.min)
                   return py::none();
                 return CesiumPython::jsonValueToPy(*self.min);
@@ -1463,7 +1418,8 @@ void initGltfBindings(py::module& m) {
               });
 
   py::class_<CesiumGltf::PropertyTableProperty::ArrayOffsetType>(
-      propTableProp, "ArrayOffsetType")
+      propTableProp,
+      "ArrayOffsetType")
       .def_property_readonly_static(
           "UINT8",
           [](py::object) {
@@ -1484,7 +1440,8 @@ void initGltfBindings(py::module& m) {
       });
 
   py::class_<CesiumGltf::PropertyTableProperty::StringOffsetType>(
-      propTableProp, "StringOffsetType")
+      propTableProp,
+      "StringOffsetType")
       .def_property_readonly_static(
           "UINT8",
           [](py::object) {
@@ -1505,7 +1462,8 @@ void initGltfBindings(py::module& m) {
       });
 
   py::class_<CesiumGltf::PropertyTable, CesiumUtility::ExtensibleObject>(
-      m, "PropertyTableSpec")
+      m,
+      "PropertyTableSpec")
       .def(py::init<>())
       .def_readwrite("name", &CesiumGltf::PropertyTable::name)
       .def_readwrite(
@@ -1515,11 +1473,10 @@ void initGltfBindings(py::module& m) {
       .def_readwrite("properties", &CesiumGltf::PropertyTable::properties);
 
   py::class_<CesiumGltf::PropertyTextureProperty, CesiumGltf::TextureInfo>(
-      m, "PropertyTextureProperty")
+      m,
+      "PropertyTextureProperty")
       .def(py::init<>())
-      .def_readwrite(
-          "channels",
-          &CesiumGltf::PropertyTextureProperty::channels)
+      .def_readwrite("channels", &CesiumGltf::PropertyTextureProperty::channels)
       .def_property(
           "offset",
           [](const CesiumGltf::PropertyTextureProperty& self) -> py::object {
@@ -1574,7 +1531,8 @@ void initGltfBindings(py::module& m) {
           });
 
   py::class_<CesiumGltf::PropertyTexture, CesiumUtility::ExtensibleObject>(
-      m, "PropertyTextureSpec")
+      m,
+      "PropertyTextureSpec")
       .def(py::init<>())
       .def_readwrite("name", &CesiumGltf::PropertyTexture::name)
       .def_readwrite(
@@ -1582,9 +1540,9 @@ void initGltfBindings(py::module& m) {
           &CesiumGltf::PropertyTexture::classProperty)
       .def_readwrite("properties", &CesiumGltf::PropertyTexture::properties);
 
-  py::class_<CesiumGltf::PropertyAttributeProperty,
-             CesiumUtility::ExtensibleObject>(
-      m, "PropertyAttributeProperty")
+  py::class_<
+      CesiumGltf::PropertyAttributeProperty,
+      CesiumUtility::ExtensibleObject>(m, "PropertyAttributeProperty")
       .def(py::init<>())
       .def_readwrite(
           "attribute",
@@ -1643,45 +1601,43 @@ void initGltfBindings(py::module& m) {
           });
 
   py::class_<CesiumGltf::PropertyAttribute, CesiumUtility::ExtensibleObject>(
-      m, "PropertyAttributeSpec")
+      m,
+      "PropertyAttributeSpec")
       .def(py::init<>())
       .def_readwrite("name", &CesiumGltf::PropertyAttribute::name)
       .def_readwrite(
           "class_property",
           &CesiumGltf::PropertyAttribute::classProperty)
-      .def_readwrite(
-          "properties",
-          &CesiumGltf::PropertyAttribute::properties);
+      .def_readwrite("properties", &CesiumGltf::PropertyAttribute::properties);
 
   py::class_<CesiumGltf::FeatureIdTexture, CesiumGltf::TextureInfo>(
-      m, "FeatureIdTexture")
+      m,
+      "FeatureIdTexture")
       .def(py::init<>())
       .def_readwrite("channels", &CesiumGltf::FeatureIdTexture::channels);
 
   py::class_<CesiumGltf::FeatureId, CesiumUtility::ExtensibleObject>(
-      m, "FeatureId")
+      m,
+      "FeatureId")
       .def(py::init<>())
       .def_readwrite("feature_count", &CesiumGltf::FeatureId::featureCount)
-      .def_readwrite(
-          "null_feature_id",
-          &CesiumGltf::FeatureId::nullFeatureId)
+      .def_readwrite("null_feature_id", &CesiumGltf::FeatureId::nullFeatureId)
       .def_readwrite("label", &CesiumGltf::FeatureId::label)
       .def_readwrite("attribute", &CesiumGltf::FeatureId::attribute)
       .def_readwrite("texture", &CesiumGltf::FeatureId::texture)
-      .def_readwrite(
-          "property_table",
-          &CesiumGltf::FeatureId::propertyTable);
+      .def_readwrite("property_table", &CesiumGltf::FeatureId::propertyTable);
 
-  py::class_<CesiumGltf::ExtensionExtMeshFeatures,
-             CesiumUtility::ExtensibleObject>(m, "ExtMeshFeatures")
+  py::class_<
+      CesiumGltf::ExtensionExtMeshFeatures,
+      CesiumUtility::ExtensibleObject>(m, "ExtMeshFeatures")
       .def(py::init<>())
       .def_readwrite(
           "feature_ids",
           &CesiumGltf::ExtensionExtMeshFeatures::featureIds);
 
-  py::class_<CesiumGltf::ExtensionMeshPrimitiveExtStructuralMetadata,
-             CesiumUtility::ExtensibleObject>(
-      m, "MeshPrimitiveExtStructuralMetadata")
+  py::class_<
+      CesiumGltf::ExtensionMeshPrimitiveExtStructuralMetadata,
+      CesiumUtility::ExtensibleObject>(m, "MeshPrimitiveExtStructuralMetadata")
       .def(py::init<>())
       .def_readwrite(
           "property_textures",
@@ -1692,9 +1648,9 @@ void initGltfBindings(py::module& m) {
           &CesiumGltf::ExtensionMeshPrimitiveExtStructuralMetadata::
               propertyAttributes);
 
-  py::class_<CesiumGltf::ExtensionModelExtStructuralMetadata,
-             CesiumUtility::ExtensibleObject>(
-      m, "ModelExtStructuralMetadata")
+  py::class_<
+      CesiumGltf::ExtensionModelExtStructuralMetadata,
+      CesiumUtility::ExtensibleObject>(m, "ModelExtStructuralMetadata")
       .def(py::init<>())
       .def_readwrite(
           "schema",
@@ -1710,20 +1666,19 @@ void initGltfBindings(py::module& m) {
           &CesiumGltf::ExtensionModelExtStructuralMetadata::propertyTextures)
       .def_readwrite(
           "property_attributes",
-          &CesiumGltf::ExtensionModelExtStructuralMetadata::
-              propertyAttributes);
+          &CesiumGltf::ExtensionModelExtStructuralMetadata::propertyAttributes);
 
-  py::class_<CesiumGltf::ExtensionExtMeshGpuInstancing,
-             CesiumUtility::ExtensibleObject>(
-      m, "ExtMeshGpuInstancing")
+  py::class_<
+      CesiumGltf::ExtensionExtMeshGpuInstancing,
+      CesiumUtility::ExtensibleObject>(m, "ExtMeshGpuInstancing")
       .def(py::init<>())
       .def_readwrite(
           "attributes",
           &CesiumGltf::ExtensionExtMeshGpuInstancing::attributes);
 
-  py::class_<CesiumGltf::ExtensionExtInstanceFeaturesFeatureId,
-             CesiumUtility::ExtensibleObject>(
-      m, "ExtInstanceFeaturesFeatureId")
+  py::class_<
+      CesiumGltf::ExtensionExtInstanceFeaturesFeatureId,
+      CesiumUtility::ExtensibleObject>(m, "ExtInstanceFeaturesFeatureId")
       .def(py::init<>())
       .def_readwrite(
           "feature_count",
@@ -1741,9 +1696,9 @@ void initGltfBindings(py::module& m) {
           "property_table",
           &CesiumGltf::ExtensionExtInstanceFeaturesFeatureId::propertyTable);
 
-  py::class_<CesiumGltf::ExtensionExtInstanceFeatures,
-             CesiumUtility::ExtensibleObject>(
-      m, "ExtInstanceFeatures")
+  py::class_<
+      CesiumGltf::ExtensionExtInstanceFeatures,
+      CesiumUtility::ExtensibleObject>(m, "ExtInstanceFeatures")
       .def(py::init<>())
       .def_readwrite(
           "feature_ids",
@@ -2363,7 +2318,8 @@ void initGltfBindings(py::module& m) {
           py::arg("v"),
           py::arg("channels"),
           "Sample the texture at (u,v) using nearest-pixel filtering.\n"
-          "channels specifies which image channels to return and in what order.")
+          "channels specifies which image channels to return and in what "
+          "order.")
       .def(
           "__bool__",
           [](const CesiumGltf::TextureView& self) {
@@ -2372,8 +2328,7 @@ void initGltfBindings(py::module& m) {
           })
       .def("__repr__", [](const CesiumGltf::TextureView& self) {
         return "<TextureView status=" +
-               std::to_string(
-                   static_cast<int>(self.getTextureViewStatus())) +
+               std::to_string(static_cast<int>(self.getTextureViewStatus())) +
                ">";
       });
 
@@ -2401,7 +2356,6 @@ void initGltfBindings(py::module& m) {
           "INVALID_BYTE_STRIDE",
           CesiumGltf::AccessorViewStatus::InvalidByteStride);
 
-
   auto bindAccessorView = [&]<typename T>(const char* name) {
     using Scalar = typename ScalarOfT<T>::type;
     constexpr py::ssize_t NC = NumComponents<T>::value;
@@ -2427,58 +2381,55 @@ void initGltfBindings(py::module& m) {
             py::arg("index"))
         .def(
             "__array__",
-            [](py::object selfObj,
-               py::object dtype,
-               bool copy) -> py::object {
+            [](py::object selfObj, py::object dtype, bool copy) -> py::object {
               constexpr py::ssize_t nc = NumComponents<T>::value;
-              auto& self =
-                  selfObj.cast<const CesiumGltf::AccessorView<T>&>();
+              auto& self = selfObj.cast<const CesiumGltf::AccessorView<T>&>();
               const auto n = static_cast<py::ssize_t>(self.size());
               if (n == 0) {
                 if constexpr (nc == 1)
                   return py::object(py::array_t<Scalar>(0));
                 else if constexpr (std::is_same_v<T, glm::mat4>)
-                  return py::object(py::array_t<Scalar>(
-                      {py::ssize_t{0}, py::ssize_t{4}, py::ssize_t{4}}));
-                else
                   return py::object(
-                      py::array_t<Scalar>({py::ssize_t{0}, nc}));
+                      py::array_t<Scalar>(
+                          {py::ssize_t{0}, py::ssize_t{4}, py::ssize_t{4}}));
+                else
+                  return py::object(py::array_t<Scalar>({py::ssize_t{0}, nc}));
               }
 
               // Zero-copy path: build a numpy array that views
               // directly into the glTF buffer memory.
-              const auto* ptr =
-                  reinterpret_cast<const Scalar*>(self.data());
-              const auto byteStride =
-                  static_cast<py::ssize_t>(self.stride());
-              const auto compBytes =
-                  static_cast<py::ssize_t>(sizeof(Scalar));
+              const auto* ptr = reinterpret_cast<const Scalar*>(self.data());
+              const auto byteStride = static_cast<py::ssize_t>(self.stride());
+              const auto compBytes = static_cast<py::ssize_t>(sizeof(Scalar));
 
               py::object view;
               if constexpr (nc == 1) {
                 // Scalar: shape (N,), stride = byteStride
-                view = py::object(py::array_t<Scalar>(
-                    {n},             // shape
-                    {byteStride},    // strides (bytes)
-                    ptr,             // data pointer
-                    selfObj));       // base object (prevent GC)
+                view = py::object(
+                    py::array_t<Scalar>(
+                        {n},          // shape
+                        {byteStride}, // strides (bytes)
+                        ptr,          // data pointer
+                        selfObj));    // base object (prevent GC)
               } else if constexpr (std::is_same_v<T, glm::mat4>) {
                 // Mat4: shape (N, 4, 4) — column-major, matching glm
                 // layout: arr[i][col][row].
-                view = py::object(py::array_t<Scalar>(
-                    {n, py::ssize_t{4}, py::ssize_t{4}},
-                    {byteStride, py::ssize_t{4} * compBytes, compBytes},
-                    ptr,
-                    selfObj));
+                view = py::object(
+                    py::array_t<Scalar>(
+                        {n, py::ssize_t{4}, py::ssize_t{4}},
+                        {byteStride, py::ssize_t{4} * compBytes, compBytes},
+                        ptr,
+                        selfObj));
               } else {
                 // Vector: shape (N, nc), strides = (byteStride,
                 // sizeof(Scalar)) — components within one element
                 // are always contiguous per glTF spec.
-                view = py::object(py::array_t<Scalar>(
-                    {n, nc},                  // shape
-                    {byteStride, compBytes},  // strides
-                    ptr,                      // data pointer
-                    selfObj));                // base object
+                view = py::object(
+                    py::array_t<Scalar>(
+                        {n, nc},                 // shape
+                        {byteStride, compBytes}, // strides
+                        ptr,                     // data pointer
+                        selfObj));               // base object
               }
 
               // If dtype requested and differs, cast (implies copy).
@@ -2532,8 +2483,7 @@ void initGltfBindings(py::module& m) {
   // type and returns the correctly-typed AccessorView<T>.
   m.def(
       "AccessorView",
-      [](const CesiumGltf::Model& model,
-         int32_t accessorIndex) -> py::object {
+      [](const CesiumGltf::Model& model, int32_t accessorIndex) -> py::object {
         using CT = CesiumGltf::Accessor::ComponentType;
         using AT = CesiumGltf::Accessor::Type;
 
@@ -2545,18 +2495,18 @@ void initGltfBindings(py::module& m) {
         const auto& type = acc->type;
         const int32_t ct = acc->componentType;
 
-        // Macro to reduce boilerplate: construct the right AccessorView<T>,
-        // validate its status, and return it as a py::object.
-#define RETURN_VIEW(T)                                                    \
-  do {                                                                    \
-    auto view = CesiumGltf::AccessorView<T>(model, accessorIndex);        \
-    if (view.status() != CesiumGltf::AccessorViewStatus::Valid) {         \
-      throw py::value_error(                                              \
-          "AccessorView failed for accessor " +                           \
-          std::to_string(accessorIndex) + ": status=" +                   \
-          std::to_string(static_cast<int>(view.status())));               \
-    }                                                                     \
-    return py::cast(std::move(view), py::return_value_policy::move);      \
+    // Macro to reduce boilerplate: construct the right AccessorView<T>,
+    // validate its status, and return it as a py::object.
+#define RETURN_VIEW(T)                                                         \
+  do {                                                                         \
+    auto view = CesiumGltf::AccessorView<T>(model, accessorIndex);             \
+    if (view.status() != CesiumGltf::AccessorViewStatus::Valid) {              \
+      throw py::value_error(                                                   \
+          "AccessorView failed for accessor " +                                \
+          std::to_string(accessorIndex) +                                      \
+          ": status=" + std::to_string(static_cast<int>(view.status())));      \
+    }                                                                          \
+    return py::cast(std::move(view), py::return_value_policy::move);           \
   } while (0)
 
         if (type == AT::SCALAR) {
@@ -2581,16 +2531,23 @@ void initGltfBindings(py::module& m) {
             break;
           }
         } else if (type == AT::VEC2) {
-          if (ct == CT::FLOAT) RETURN_VIEW(glm::vec2);
-          if (ct == CT::DOUBLE) RETURN_VIEW(glm::dvec2);
+          if (ct == CT::FLOAT)
+            RETURN_VIEW(glm::vec2);
+          if (ct == CT::DOUBLE)
+            RETURN_VIEW(glm::dvec2);
         } else if (type == AT::VEC3) {
-          if (ct == CT::FLOAT) RETURN_VIEW(glm::vec3);
-          if (ct == CT::DOUBLE) RETURN_VIEW(glm::dvec3);
+          if (ct == CT::FLOAT)
+            RETURN_VIEW(glm::vec3);
+          if (ct == CT::DOUBLE)
+            RETURN_VIEW(glm::dvec3);
         } else if (type == AT::VEC4) {
-          if (ct == CT::FLOAT) RETURN_VIEW(glm::vec4);
-          if (ct == CT::DOUBLE) RETURN_VIEW(glm::dvec4);
+          if (ct == CT::FLOAT)
+            RETURN_VIEW(glm::vec4);
+          if (ct == CT::DOUBLE)
+            RETURN_VIEW(glm::dvec4);
         } else if (type == AT::MAT4) {
-          if (ct == CT::FLOAT) RETURN_VIEW(glm::mat4);
+          if (ct == CT::FLOAT)
+            RETURN_VIEW(glm::mat4);
         }
 
 #undef RETURN_VIEW
@@ -2726,7 +2683,6 @@ void initGltfBindings(py::module& m) {
   bindAccessorWriter.operator()<glm::dvec3>("AccessorWriterDVec3");
   bindAccessorWriter.operator()<glm::dvec4>("AccessorWriterDVec4");
   bindAccessorWriter.operator()<glm::mat4>("AccessorWriterMat4");
-
 
   // Helper: convert AccessorView<AccessorTypes::VEC<N><T>> to numpy
   // (N_elements, N_components)

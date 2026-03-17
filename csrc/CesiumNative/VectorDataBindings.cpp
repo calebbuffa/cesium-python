@@ -653,9 +653,8 @@ void initVectorDataBindings(py::module& m) {
       .def(
           "__len__",
           [](const CesiumVectorData::GeoJsonDocument& self) {
-            auto* fc =
-                self.rootObject
-                    .getIf<CesiumVectorData::GeoJsonFeatureCollection>();
+            auto* fc = self.rootObject
+                           .getIf<CesiumVectorData::GeoJsonFeatureCollection>();
             if (!fc)
               throw py::type_error(
                   "GeoJsonDocument root is not a FeatureCollection");
@@ -672,24 +671,23 @@ void initVectorDataBindings(py::module& m) {
       .def(
           "__getitem__",
           [](const CesiumVectorData::GeoJsonDocument& self, int64_t index) {
-            auto* fc =
-                self.rootObject
-                    .getIf<CesiumVectorData::GeoJsonFeatureCollection>();
+            auto* fc = self.rootObject
+                           .getIf<CesiumVectorData::GeoJsonFeatureCollection>();
             if (!fc)
               throw py::type_error(
                   "GeoJsonDocument root is not a FeatureCollection");
             if (index < 0)
               index += static_cast<int64_t>(fc->features.size());
-            if (index < 0 ||
-                index >= static_cast<int64_t>(fc->features.size()))
+            if (index < 0 || index >= static_cast<int64_t>(fc->features.size()))
               throw py::index_error("Feature index out of range");
             return fc->features[static_cast<size_t>(index)];
           },
           py::arg("index"))
       .def("__repr__", [](const CesiumVectorData::GeoJsonDocument& self) {
         return "<GeoJsonDocument root_type=" +
-               std::string(CesiumVectorData::geoJsonObjectTypeToString(
-                   self.rootObject.getType())) +
+               std::string(
+                   CesiumVectorData::geoJsonObjectTypeToString(
+                       self.rootObject.getType())) +
                ">";
       });
 

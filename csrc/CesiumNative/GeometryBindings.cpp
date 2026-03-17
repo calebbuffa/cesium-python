@@ -236,8 +236,7 @@ py::array_t<double> batchPlaneProjectPoint(
       3,
       3,
       [&plane](const double* in, double* out) {
-        auto p = plane.projectPointOntoPlane(
-            glm::dvec3(in[0], in[1], in[2]));
+        auto p = plane.projectPointOntoPlane(glm::dvec3(in[0], in[1], in[2]));
         out[0] = p.x;
         out[1] = p.y;
         out[2] = p.z;
@@ -726,14 +725,16 @@ void initGeometryBindings(py::module& m) {
             return toNumpy(self.pointFromDistance(distance));
           },
           py::arg("distance"))
-      .def("__repr__", [](const CesiumGeometry::Ray& self) {
-        const auto& o = self.getOrigin();
-        const auto& d = self.getDirection();
-        return "Ray(origin=[" + std::to_string(o.x) + ", " +
-               std::to_string(o.y) + ", " + std::to_string(o.z) +
-               "], direction=[" + std::to_string(d.x) + ", " +
-               std::to_string(d.y) + ", " + std::to_string(d.z) + "])";
-      })
+      .def(
+          "__repr__",
+          [](const CesiumGeometry::Ray& self) {
+            const auto& o = self.getOrigin();
+            const auto& d = self.getDirection();
+            return "Ray(origin=[" + std::to_string(o.x) + ", " +
+                   std::to_string(o.y) + ", " + std::to_string(o.z) +
+                   "], direction=[" + std::to_string(d.x) + ", " +
+                   std::to_string(d.y) + ", " + std::to_string(d.z) + "])";
+          })
       .def(
           "transform",
           [](const CesiumGeometry::Ray& self, const py::object& mat) {
@@ -788,18 +789,18 @@ void initGeometryBindings(py::module& m) {
              const py::object& position) {
             return self.contains(toDvec<3>(position));
           })
-      .def("__repr__", [](const CesiumGeometry::BoundingSphere& self) {
-        const auto& c = self.getCenter();
-        return "BoundingSphere(center=[" + std::to_string(c.x) + ", " +
-               std::to_string(c.y) + ", " + std::to_string(c.z) +
-               "], radius=" + std::to_string(self.getRadius()) + ")";
-      })
+      .def(
+          "__repr__",
+          [](const CesiumGeometry::BoundingSphere& self) {
+            const auto& c = self.getCenter();
+            return "BoundingSphere(center=[" + std::to_string(c.x) + ", " +
+                   std::to_string(c.y) + ", " + std::to_string(c.z) +
+                   "], radius=" + std::to_string(self.getRadius()) + ")";
+          })
       .def(
           "transform",
           [](const CesiumGeometry::BoundingSphere& self,
-             const py::object& mat) {
-            return self.transform(toDmat<4>(mat));
-          },
+             const py::object& mat) { return self.transform(toDmat<4>(mat)); },
           py::arg("transformation"));
 
   py::class_<CesiumGeometry::OrientedBoundingBox>(m, "OrientedBoundingBox")
@@ -1505,10 +1506,16 @@ void initGeometryBindings(py::module& m) {
                 CesiumGeometry::Ray ray(
                     glm::dvec3(origBuf(i, 0), origBuf(i, 1), origBuf(i, 2)),
                     glm::dvec3(dirBuf(i, 0), dirBuf(i, 1), dirBuf(i, 2)));
-                auto t = CesiumGeometry::IntersectionTests::
-                    rayTriangleParametric(ray, v0, v1, v2, cullBackFaces);
-                out[i] = t.has_value() ? *t
-                                       : std::numeric_limits<double>::quiet_NaN();
+                auto t =
+                    CesiumGeometry::IntersectionTests::rayTriangleParametric(
+                        ray,
+                        v0,
+                        v1,
+                        v2,
+                        cullBackFaces);
+                out[i] = t.has_value()
+                             ? *t
+                             : std::numeric_limits<double>::quiet_NaN();
               }
             }
             return result;

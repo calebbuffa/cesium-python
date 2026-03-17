@@ -20,11 +20,11 @@
 #include <CesiumRasterOverlays/GoogleMapTilesRasterOverlay.h>
 #include <CesiumRasterOverlays/ITwinCesiumCuratedContentRasterOverlay.h>
 #include <CesiumRasterOverlays/IonRasterOverlay.h>
+#include <CesiumRasterOverlays/QuadtreeRasterOverlayTileProvider.h>
 #include <CesiumRasterOverlays/RasterOverlay.h>
 #include <CesiumRasterOverlays/RasterOverlayDetails.h>
 #include <CesiumRasterOverlays/RasterOverlayLoadFailureDetails.h>
 #include <CesiumRasterOverlays/RasterOverlayTile.h>
-#include <CesiumRasterOverlays/QuadtreeRasterOverlayTileProvider.h>
 #include <CesiumRasterOverlays/RasterOverlayTileProvider.h>
 #include <CesiumRasterOverlays/RasterOverlayUtilities.h>
 #include <CesiumRasterOverlays/RasterizedPolygonsOverlay.h>
@@ -243,9 +243,7 @@ void initRasterOverlaysBindings(py::module& m) {
             auto* ptr = self.getTileProvider();
             if (!ptr)
               return py::none();
-            return py::cast(
-                ptr,
-                py::return_value_policy::reference_internal);
+            return py::cast(ptr, py::return_value_policy::reference_internal);
           })
       .def(
           "get_tile",
