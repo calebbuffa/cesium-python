@@ -1,0 +1,3 @@
+recursive-include cesium *.pyi *.py
+include LICENSE
+include README.md
