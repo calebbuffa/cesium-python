@@ -36,7 +36,7 @@ namespace CesiumPython {
 // numpy/sequence -> GLM  (always copies)
 
 /// Convert a 1-D numpy array or sequence of length N to glm::dvec<N>.
-template <size_t N>
+template <glm::length_t N>
 inline glm::vec<N, double, glm::defaultp> toDvec(const py::handle& value) {
   if (py::isinstance<py::array>(value)) {
     auto arr = py::reinterpret_borrow<
@@ -69,7 +69,7 @@ inline glm::vec<N, double, glm::defaultp> toDvec(const py::handle& value) {
 
 /// Convert a 2-D (NxN) or 1-D (N*N) numpy array, or flat sequence, to
 /// glm::dmat<N,N>. Expects column-major layout: arr[col, row] = mat[col][row].
-template <size_t N>
+template <glm::length_t N>
 inline glm::mat<N, N, double, glm::defaultp> toDmat(const py::handle& value) {
   if (py::isinstance<py::array>(value)) {
     auto arr = py::reinterpret_borrow<
@@ -157,7 +157,7 @@ inline glm::dquat toDquat(const py::handle& value) {
 // GLM -> numpy  (copy)
 
 /// Copy a glm::dvec<N> to a new (N,) float64 numpy array.
-template <size_t N>
+template <glm::length_t N>
 inline py::array_t<double>
 toNumpy(const glm::vec<N, double, glm::defaultp>& value) {
   py::array_t<double> out(N);
@@ -169,7 +169,7 @@ toNumpy(const glm::vec<N, double, glm::defaultp>& value) {
 }
 
 /// Copy a glm::dmat<N,N> to a new (N, N) float64 numpy array (column-major).
-template <size_t N>
+template <glm::length_t N>
 inline py::array_t<double>
 toNumpy(const glm::mat<N, N, double, glm::defaultp>& value) {
   py::array_t<double> out(
@@ -196,7 +196,7 @@ inline py::array_t<double> toNumpy(const glm::dquat& value) {
 }
 
 /// Copy a span of glm::dvec<N> to a new (M, N) float64 numpy array.
-template <size_t N>
+template <glm::length_t N>
 inline py::array_t<double>
 toNumpy(std::span<const glm::vec<N, double, glm::defaultp>> values) {
   const auto M = static_cast<py::ssize_t>(values.size());
@@ -213,7 +213,7 @@ toNumpy(std::span<const glm::vec<N, double, glm::defaultp>> values) {
 }
 
 /// Copy a vector of glm::dvec<N> to a new (M, N) float64 numpy array.
-template <size_t N>
+template <glm::length_t N>
 inline py::array_t<double>
 toNumpy(const std::vector<glm::vec<N, double, glm::defaultp>>& values) {
   return toNumpy<N>(std::span<const glm::vec<N, double, glm::defaultp>>(
@@ -224,7 +224,7 @@ toNumpy(const std::vector<glm::vec<N, double, glm::defaultp>>& values) {
 // GLM/data -> numpy  (zero-copy read-only view)
 
 /// Zero-copy view of a glm::dvec<N> as (N,) float64 numpy array.
-template <size_t N>
+template <glm::length_t N>
 inline py::array_t<double>
 toNumpyView(const glm::vec<N, double, glm::defaultp>& vec, py::handle base) {
   auto arr = py::array_t<double>(
@@ -237,7 +237,7 @@ toNumpyView(const glm::vec<N, double, glm::defaultp>& vec, py::handle base) {
 }
 
 /// Zero-copy view of a glm::dmat<N,N> as (N, N) float64 numpy array.
-template <size_t N>
+template <glm::length_t N>
 inline py::array_t<double>
 toNumpyView(const glm::mat<N, N, double, glm::defaultp>& mat, py::handle base) {
   auto arr = py::array_t<double>(
@@ -346,7 +346,7 @@ void fillPositionArray(
     py::array_t<DstT>& arr,
     const std::vector<SrcT>& src,
     const glm::dmat4& transform = glm::dmat4(1.0)) {
-  auto data = arr.mutable_unchecked<2>();
+  auto data = arr.template mutable_unchecked<2>();
   for (size_t i = 0; i < src.size(); ++i) {
     glm::dvec4 pos(src[i].x, src[i].y, src[i].z, 1.0);
     glm::dvec4 transformed = transform * pos;
@@ -363,7 +363,7 @@ void fillNormalArray(
     const glm::dmat4& nodeTransform) {
   glm::dmat3 rotScale(nodeTransform);
   glm::dmat3 normalTransform = glm::transpose(glm::inverse(rotScale));
-  auto data = arr.mutable_unchecked<2>();
+  auto data = arr.template mutable_unchecked<2>();
   for (size_t i = 0; i < src.size(); ++i) {
     glm::dvec3 norm(src[i].x, src[i].y, src[i].z);
     glm::dvec3 transformed = normalTransform * norm;
@@ -376,7 +376,7 @@ void fillNormalArray(
 
 template <typename T>
 void fillUvArray(py::array_t<T>& arr, const std::vector<glm::vec<2, T>>& src) {
-  auto data = arr.mutable_unchecked<2>();
+  auto data = arr.template mutable_unchecked<2>();
   for (size_t i = 0; i < src.size(); ++i) {
     data(i, 0) = src[i].x;
     data(i, 1) = src[i].y;
@@ -385,7 +385,7 @@ void fillUvArray(py::array_t<T>& arr, const std::vector<glm::vec<2, T>>& src) {
 
 template <typename SrcT, typename DstT>
 void fillIndexArray(py::array_t<DstT>& arr, const std::vector<SrcT>& src) {
-  auto data = arr.mutable_unchecked<1>();
+  auto data = arr.template mutable_unchecked<1>();
   for (size_t i = 0; i < src.size(); ++i) {
     data(i) = static_cast<DstT>(src[i]);
   }

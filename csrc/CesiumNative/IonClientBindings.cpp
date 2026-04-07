@@ -376,7 +376,11 @@ void initIonClientBindings(py::module& m) {
       .def_property_readonly(
           "refresh_token",
           &CesiumIonClient::Connection::getRefreshToken)
-      .def_property_readonly("api_url", &CesiumIonClient::Connection::getApiUrl)
+      .def_property_readonly(
+        "api_url",
+        [](const CesiumIonClient::Connection& self) {
+          return self.getApiUrl();
+        })
       .def_property_readonly(
           "async_system",
           &CesiumIonClient::Connection::getAsyncSystem)

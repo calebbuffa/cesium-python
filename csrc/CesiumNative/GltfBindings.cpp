@@ -2599,7 +2599,7 @@ void initGltfBindings(py::module& m) {
             [](CesiumGltf::AccessorWriter<T>& self, py::array arr) {
               const auto n = self.size();
               if constexpr (std::is_arithmetic_v<T>) {
-                auto in = arr.cast<py::array_t<T>>().unchecked<1>();
+                auto in = arr.cast<py::array_t<T>>().template unchecked<1>();
                 if (in.shape(0) != n)
                   throw py::value_error(
                       "Array length " + std::to_string(in.shape(0)) +
@@ -2610,7 +2610,7 @@ void initGltfBindings(py::module& m) {
                   std::is_same_v<T, glm::vec2> ||
                   std::is_same_v<T, glm::dvec2>) {
                 using S = typename T::value_type;
-                auto in = arr.cast<py::array_t<S>>().unchecked<2>();
+                auto in = arr.cast<py::array_t<S>>().template unchecked<2>();
                 if (in.shape(0) != n || in.shape(1) != 2)
                   throw py::value_error(
                       "Expected (" + std::to_string(n) + ", 2) array");
@@ -2620,7 +2620,7 @@ void initGltfBindings(py::module& m) {
                   std::is_same_v<T, glm::vec3> ||
                   std::is_same_v<T, glm::dvec3>) {
                 using S = typename T::value_type;
-                auto in = arr.cast<py::array_t<S>>().unchecked<2>();
+                auto in = arr.cast<py::array_t<S>>().template unchecked<2>();
                 if (in.shape(0) != n || in.shape(1) != 3)
                   throw py::value_error(
                       "Expected (" + std::to_string(n) + ", 3) array");
@@ -2630,14 +2630,14 @@ void initGltfBindings(py::module& m) {
                   std::is_same_v<T, glm::vec4> ||
                   std::is_same_v<T, glm::dvec4>) {
                 using S = typename T::value_type;
-                auto in = arr.cast<py::array_t<S>>().unchecked<2>();
+                auto in = arr.cast<py::array_t<S>>().template unchecked<2>();
                 if (in.shape(0) != n || in.shape(1) != 4)
                   throw py::value_error(
                       "Expected (" + std::to_string(n) + ", 4) array");
                 for (int64_t i = 0; i < n; ++i)
                   self[i] = T(in(i, 0), in(i, 1), in(i, 2), in(i, 3));
               } else if constexpr (std::is_same_v<T, glm::mat4>) {
-                auto in = arr.cast<py::array_t<float>>().unchecked<3>();
+                auto in = arr.cast<py::array_t<float>>().template unchecked<3>();
                 if (in.shape(0) != n || in.shape(1) != 4 || in.shape(2) != 4)
                   throw py::value_error(
                       "Expected (" + std::to_string(n) + ", 4, 4) array");
@@ -2693,7 +2693,7 @@ void initGltfBindings(py::module& m) {
     using ElemT = std::decay_t<decltype(view[0])>;
     using CompT = std::decay_t<decltype(view[0].value[0])>;
     py::array_t<CompT> result({n, static_cast<py::ssize_t>(components)});
-    auto out = result.mutable_unchecked<2>();
+    auto out = result.template mutable_unchecked<2>();
     for (py::ssize_t i = 0; i < n; ++i)
       for (int c = 0; c < components; ++c)
         out(i, c) = view[i].value[c];
