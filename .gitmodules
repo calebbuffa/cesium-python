@@ -1,6 +1,6 @@
 [submodule "extern/cesium-native"]
 	path = extern/cesium-native
-	url = https://github.com/CesiumGS/cesium-native.git
+	url = https://github.com/calebbuffa/cesium-native.git
 [submodule "extern/libzip"]
 	path = extern/libzip
 	url = https://github.com/nih-at/libzip.git
