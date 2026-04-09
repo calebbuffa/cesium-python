@@ -7,14 +7,29 @@ import numpy.typing as npt
 
 from .. import async_  # pyright: ignore[reportAttributeAccessIssue]
 from ..async_ import AsyncSystem, Future, IAssetAccessor, IAssetRequest, SharedFuture
-from ..geometry import OrientedBoundingBox
-from ..geospatial import BoundingRegion, Cartographic, Ellipsoid, GlobeRectangle
+from ..geometry import (
+    BoundingCylinderRegion,
+    BoundingSphere,
+    OctreeTileID,
+    OrientedBoundingBox,
+    QuadtreeTileID,
+    UpsampledQuadtreeNode,
+)
+from ..geospatial import (
+    BoundingRegion,
+    BoundingRegionWithLooseFittingHeights,
+    Cartographic,
+    Ellipsoid,
+    GlobeRectangle,
+    S2CellBoundingVolume,
+)
 from ..gltf import ImageAsset, Ktx2TranscodeTargets, Model
 from ..gltf.reader import GltfSharedAssetSystem
 from ..raster_overlays import (
     ActivatedRasterOverlay,
     RasterizedPolygonsOverlay,
     RasterOverlay,
+    RasterOverlayDetails,
     RasterOverlayTile,
 )
 from ..utility import ErrorList, JsonValue
@@ -161,11 +176,30 @@ class TilesetContentLoaderFactory:
     def is_valid(self) -> bool: ...
 
 class TilesetContentLoader:
+    def __init__(self) -> None: ...
     def load_tile_content(self, input: TileLoadInput) -> FutureTileLoadResult: ...
+    def create_tile_children(
+        self, tile: Tile, ellipsoid: Ellipsoid = ...
+    ) -> TileChildrenResult: ...
     def has_height_sampler(self) -> bool: ...
     @property
     def height_sampler(self) -> ITilesetHeightSampler | None: ...
     def has_owner(self) -> bool: ...
+
+class TileChildrenResult:
+    """Result of TilesetContentLoader.create_tile_children().
+
+    Use ``add_child(loader)`` to append new tiles.  The result owns all
+    child ``Tile`` objects — references returned by ``add_child`` and
+    ``children`` are valid for the lifetime of this object.
+    """
+    state: TileLoadResultState
+    @property
+    def children(self) -> list[Tile]: ...
+    def add_child(self, loader: TilesetContentLoader) -> Tile:
+        """Append a new child Tile and return a reference to it."""
+        ...
+    def __init__(self) -> None: ...
 
 class Credit: ...
 
@@ -246,7 +280,7 @@ class ITwinRealityDataContentLoaderFactory(TilesetContentLoaderFactory):
 
 class TilesetSharedAssetSystem(GltfSharedAssetSystem):
     @staticmethod
-    def get_default() -> TilesetSharedAssetSystem: ...
+    def default_system() -> TilesetSharedAssetSystem: ...
 
 class CreditSystem:
     def should_be_shown_on_screen(self, credit: Credit) -> bool: ...
@@ -306,9 +340,37 @@ class BoundingVolume:
     ) -> GlobeRectangle | None:
         """Estimate the bounding GlobeRectangle. Returns None if not estimable."""
         ...
-    def get_bounding_region(self) -> BoundingRegion | None:
+    @property
+    def bounding_region(self) -> BoundingRegion | None:
         """Get the BoundingRegion if this volume is one, else None."""
         ...
+    @staticmethod
+    def from_obb(obb: OrientedBoundingBox) -> BoundingVolume:
+        """Construct a BoundingVolume wrapping an OrientedBoundingBox."""
+        ...
+    @staticmethod
+    def from_sphere(sphere: BoundingSphere) -> BoundingVolume:
+        """Construct a BoundingVolume wrapping a BoundingSphere."""
+        ...
+    @staticmethod
+    def from_region(region: BoundingRegion) -> BoundingVolume:
+        """Construct a BoundingVolume wrapping a BoundingRegion."""
+        ...
+    @staticmethod
+    def from_loose_region(
+        region: BoundingRegionWithLooseFittingHeights,
+    ) -> BoundingVolume:
+        """Construct a BoundingVolume wrapping a BoundingRegionWithLooseFittingHeights."""
+        ...
+    @staticmethod
+    def from_s2(s2: S2CellBoundingVolume) -> BoundingVolume:
+        """Construct a BoundingVolume wrapping an S2CellBoundingVolume."""
+        ...
+    @staticmethod
+    def from_cylinder(cylinder: BoundingCylinderRegion) -> BoundingVolume:
+        """Construct a BoundingVolume wrapping a BoundingCylinderRegion."""
+        ...
+    def __repr__(self) -> str: ...
 
 class TileExternalContentMetadata: ...
 class TileUnknownContent: ...
@@ -327,8 +389,16 @@ class TileRenderContent:
 
 class TileContent:
     def __init__(self, content: TileEmptyContent | None = None) -> None: ...
-    def set_unknown_content(self) -> None: ...
-    def set_empty_content(self) -> None: ...
+    @property
+    def content_kind(
+        self,
+    ) -> TileRenderContent | TileUnknownContent | TileEmptyContent | TileExternalContent | None:
+        """Current content variant. Assign TileUnknownContent or TileEmptyContent to change."""
+        ...
+    @content_kind.setter
+    def content_kind(
+        self, value: TileUnknownContent | TileEmptyContent
+    ) -> None: ...
     def is_unknown_content(self) -> bool: ...
     def is_empty_content(self) -> bool: ...
     def is_external_content(self) -> bool: ...
@@ -339,20 +409,48 @@ class TileContent:
     def content_kind_name(self) -> str: ...
 
 class Tile:
-    parent: Tile | None
-    children: list[Tile]
-    child_count: int
-    bounding_volume: BoundingVolume
-    viewer_request_volume: BoundingVolume | None
+    @property
+    def parent(self) -> Tile | None: ...
+    @property
+    def children(self) -> list[Tile]: ...
+    @property
+    def child_count(self) -> int: ...
+    @property
+    def bounding_volume(self) -> BoundingVolume: ...
+    @bounding_volume.setter
+    def bounding_volume(self, value: BoundingVolume) -> None: ...
+    @property
+    def viewer_request_volume(self) -> BoundingVolume | None: ...
     geometric_error: float
-    non_zero_geometric_error: float
+    @property
+    def non_zero_geometric_error(self) -> float: ...
     unconditionally_refine: bool
     refine: TileRefine
     transform: npt.NDArray[np.float64]
-    tile_id_string: str
-    content: TileContent
-    state: TileLoadState
-    reference_count: int
+    @property
+    def tile_id(self) -> str | QuadtreeTileID | OctreeTileID | UpsampledQuadtreeNode:
+        """Get or set the typed tile ID.
+
+        Returns the actual variant member — a ``QuadtreeTileID``,
+        ``OctreeTileID``, ``UpsampledQuadtreeNode``, or ``str``.
+        Setting accepts any of those types.
+        """
+        ...
+    @tile_id.setter
+    def tile_id(
+        self,
+        value: str | QuadtreeTileID | OctreeTileID | UpsampledQuadtreeNode,
+    ) -> None: ...
+    @property
+    def tile_id_string(self) -> str: ...
+    @tile_id_string.setter
+    def tile_id_string(self, value: str) -> None: ...
+    @property
+    def content(self) -> TileContent: ...
+    @property
+    def state(self) -> TileLoadState: ...
+    @property
+    def reference_count(self) -> int: ...
     @property
     def content_bounding_volume(self) -> BoundingVolume | None: ...
     @property
@@ -374,16 +472,31 @@ class TileLoadResult:
     state: TileLoadResultState
     ellipsoid: Ellipsoid
     content_kind_name: str
-    @property
-    def updated_bounding_volume(self) -> BoundingVolume | None: ...
-    @property
-    def updated_content_bounding_volume(self) -> BoundingVolume | None: ...
-    @property
-    def initial_bounding_volume(self) -> BoundingVolume | None: ...
-    @property
-    def initial_content_bounding_volume(self) -> BoundingVolume | None: ...
+    raster_overlay_details: RasterOverlayDetails | None
+    tile_initializer: Callable[[Tile], None] | None
+    updated_bounding_volume: BoundingVolume | None
+    updated_content_bounding_volume: BoundingVolume | None
+    initial_bounding_volume: BoundingVolume | None
+    initial_content_bounding_volume: BoundingVolume | None
     @property
     def model(self) -> Model | None: ...
+    @model.setter
+    def model(self, value: Model) -> None: ...
+    @property
+    def content_kind(
+        self,
+    ) -> Model | TileUnknownContent | TileEmptyContent | TileExternalContent:
+        """Get or set the content variant.
+
+        Assign a ``Model``, ``TileEmptyContent``, ``TileExternalContent``, or
+        ``TileUnknownContent`` to change the tile's content type.
+        """
+        ...
+    @content_kind.setter
+    def content_kind(
+        self,
+        value: Model | TileUnknownContent | TileEmptyContent | TileExternalContent,
+    ) -> None: ...
     @staticmethod
     def create_failed_result(
         asset_accessor: IAssetAccessor, completed_request: IAssetRequest
@@ -392,6 +505,7 @@ class TileLoadResult:
     def create_retry_later_result(
         asset_accessor: IAssetAccessor, completed_request: IAssetRequest
     ) -> TileLoadResult: ...
+    def __repr__(self) -> str: ...
 
 class TileLoadResultAndRenderResources:
     result: TileLoadResult
@@ -467,6 +581,19 @@ class ViewState:
         projection_matrix: npt.NDArray[np.floating],
         viewport_size: npt.NDArray[np.floating],
     ) -> None: ...
+    @overload
+    def __init__(
+        self,
+        position: npt.NDArray[np.floating],
+        direction: npt.NDArray[np.floating],
+        up: npt.NDArray[np.floating],
+        viewport_size: npt.NDArray[np.floating],
+        left: float,
+        right: float,
+        bottom: float,
+        top: float,
+        ellipsoid: Ellipsoid = ...,
+    ) -> None: ...
     position: npt.NDArray[np.float64]
     direction: npt.NDArray[np.float64]
     up: npt.NDArray[np.float64]
@@ -512,7 +639,8 @@ class GltfModifierOutput:
 
 class GltfModifier:
     def __init__(self) -> None: ...
-    def get_current_version(self) -> int: ...
+    @property
+    def current_version(self) -> int: ...
     def is_active(self) -> bool: ...
     def trigger(self) -> None: ...
     def apply(
@@ -710,7 +838,7 @@ class Tileset:
     total_data_bytes: int
     default_view_group: TilesetViewGroup
     metadata: TilesetMetadata | None
-    def set_show_credits_on_screen(self, show_credits_on_screen: bool) -> None: ...
+    def show_credits_on_screen(self, show_credits_on_screen: bool) -> None: ...
     def compute_load_progress(self) -> float: ...
     def load_metadata(self) -> Future[TilesetMetadata | None]: ...
     def sample_height_most_detailed(
@@ -749,8 +877,12 @@ def create_resolved_future_tile_load_result(
 def create_resolved_future_sample_height_result(
     async_system: AsyncSystem, value: SampleHeightResult
 ) -> Future[SampleHeightResult]: ...
-def create_tile_id_string(tile_content_url: str) -> str: ...
-def is_loadable_tile_id(tile_content_url: str) -> bool: ...
+def create_tile_id_string(
+    tile_id: str | QuadtreeTileID | OctreeTileID | UpsampledQuadtreeNode,
+) -> str: ...
+def is_loadable_tile_id(
+    tile_id: str | QuadtreeTileID | OctreeTileID | UpsampledQuadtreeNode,
+) -> bool: ...
 def create_tileset_content_loader_factory_from_callbacks(
     create_loader: Callable[
         [TilesetExternals, TilesetOptions, Callable[..., None]],

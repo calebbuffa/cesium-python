@@ -219,8 +219,8 @@ void initRasterOverlaysBindings(py::module& m) {
           "number_of_tiles_loading",
           &CesiumRasterOverlays::ActivatedRasterOverlay::
               getNumberOfTilesLoading)
-      .def(
-          "get_ready_event",
+      .def_property_readonly(
+          "ready_event",
           [](CesiumRasterOverlays::ActivatedRasterOverlay& self)
               -> SharedFutureVoid& { return self.getReadyEvent(); },
           py::return_value_policy::reference_internal)

@@ -87,7 +87,19 @@ auto bindPagedList(py::class_<CesiumITwinClient::PagedList<T>>& cls)
           },
           py::keep_alive<0, 1>())
       .def("has_next_url", &CesiumITwinClient::PagedList<T>::hasNextUrl)
-      .def("has_prev_url", &CesiumITwinClient::PagedList<T>::hasPrevUrl);
+      .def("has_prev_url", &CesiumITwinClient::PagedList<T>::hasPrevUrl)
+      .def(
+          "__contains__",
+          [](const CesiumITwinClient::PagedList<T>& self, const T& item) {
+            for (size_t i = 0; i < self.size(); ++i) {
+              if (self[i].id == item.id)
+                return true;
+            }
+            return false;
+          })
+      .def("__repr__", [](const CesiumITwinClient::PagedList<T>& self) {
+        return "PagedList(size=" + std::to_string(self.size()) + ")";
+      });
   return cls;
 }
 
@@ -206,7 +218,26 @@ void initITwinClientBindings(py::module& m) {
       .def_readwrite("type", &CesiumITwinClient::ITwin::type)
       .def_readwrite("number", &CesiumITwinClient::ITwin::number)
       .def_readwrite("display_name", &CesiumITwinClient::ITwin::displayName)
-      .def_readwrite("status", &CesiumITwinClient::ITwin::status);
+      .def_readwrite("status", &CesiumITwinClient::ITwin::status)
+      .def(
+          "__repr__",
+          [](const CesiumITwinClient::ITwin& self) {
+            return "ITwin(id=" + self.id +
+                   ", display_name=" + self.displayName + ")";
+          })
+      .def(
+          "__eq__",
+          [](const CesiumITwinClient::ITwin& a,
+             const CesiumITwinClient::ITwin& b) { return a.id == b.id; },
+          py::is_operator())
+      .def(
+          "__ne__",
+          [](const CesiumITwinClient::ITwin& a,
+             const CesiumITwinClient::ITwin& b) { return a.id != b.id; },
+          py::is_operator())
+      .def("__hash__", [](const CesiumITwinClient::ITwin& self) {
+        return std::hash<std::string>{}(self.id);
+      });
 
   py::class_<CesiumITwinClient::IModel>(m, "IModel")
       .def(py::init<>())
@@ -215,7 +246,26 @@ void initITwinClientBindings(py::module& m) {
       .def_readwrite("name", &CesiumITwinClient::IModel::name)
       .def_readwrite("description", &CesiumITwinClient::IModel::description)
       .def_readwrite("state", &CesiumITwinClient::IModel::state)
-      .def_readwrite("extent", &CesiumITwinClient::IModel::extent);
+      .def_readwrite("extent", &CesiumITwinClient::IModel::extent)
+      .def(
+          "__repr__",
+          [](const CesiumITwinClient::IModel& self) {
+            return "IModel(id=" + self.id +
+                   ", display_name=" + self.displayName + ")";
+          })
+      .def(
+          "__eq__",
+          [](const CesiumITwinClient::IModel& a,
+             const CesiumITwinClient::IModel& b) { return a.id == b.id; },
+          py::is_operator())
+      .def(
+          "__ne__",
+          [](const CesiumITwinClient::IModel& a,
+             const CesiumITwinClient::IModel& b) { return a.id != b.id; },
+          py::is_operator())
+      .def("__hash__", [](const CesiumITwinClient::IModel& self) {
+        return std::hash<std::string>{}(self.id);
+      });
 
   py::class_<CesiumITwinClient::IModelMeshExport>(m, "IModelMeshExport")
       .def(py::init<>())
@@ -226,7 +276,30 @@ void initITwinClientBindings(py::module& m) {
       .def_readwrite("status", &CesiumITwinClient::IModelMeshExport::status)
       .def_readwrite(
           "export_type",
-          &CesiumITwinClient::IModelMeshExport::exportType);
+          &CesiumITwinClient::IModelMeshExport::exportType)
+      .def(
+          "__repr__",
+          [](const CesiumITwinClient::IModelMeshExport& self) {
+            return "IModelMeshExport(id=" + self.id +
+                   ", display_name=" + self.displayName + ")";
+          })
+      .def(
+          "__eq__",
+          [](const CesiumITwinClient::IModelMeshExport& a,
+             const CesiumITwinClient::IModelMeshExport& b) {
+            return a.id == b.id;
+          },
+          py::is_operator())
+      .def(
+          "__ne__",
+          [](const CesiumITwinClient::IModelMeshExport& a,
+             const CesiumITwinClient::IModelMeshExport& b) {
+            return a.id != b.id;
+          },
+          py::is_operator())
+      .def("__hash__", [](const CesiumITwinClient::IModelMeshExport& self) {
+        return std::hash<std::string>{}(self.id);
+      });
 
   py::class_<CesiumITwinClient::ITwinRealityData>(m, "ITwinRealityData")
       .def(py::init<>())
@@ -244,7 +317,30 @@ void initITwinClientBindings(py::module& m) {
       .def_readwrite("extent", &CesiumITwinClient::ITwinRealityData::extent)
       .def_readwrite(
           "authoring",
-          &CesiumITwinClient::ITwinRealityData::authoring);
+          &CesiumITwinClient::ITwinRealityData::authoring)
+      .def(
+          "__repr__",
+          [](const CesiumITwinClient::ITwinRealityData& self) {
+            return "ITwinRealityData(id=" + self.id +
+                   ", display_name=" + self.displayName + ")";
+          })
+      .def(
+          "__eq__",
+          [](const CesiumITwinClient::ITwinRealityData& a,
+             const CesiumITwinClient::ITwinRealityData& b) {
+            return a.id == b.id;
+          },
+          py::is_operator())
+      .def(
+          "__ne__",
+          [](const CesiumITwinClient::ITwinRealityData& a,
+             const CesiumITwinClient::ITwinRealityData& b) {
+            return a.id != b.id;
+          },
+          py::is_operator())
+      .def("__hash__", [](const CesiumITwinClient::ITwinRealityData& self) {
+        return std::hash<std::string>{}(self.id);
+      });
 
   py::class_<CesiumITwinClient::CesiumCuratedContentAsset>(
       m,
@@ -350,20 +446,27 @@ void initITwinClientBindings(py::module& m) {
       .def_property_readonly(
           "token_header",
           &CesiumITwinClient::AuthenticationToken::getTokenHeader)
-      .def_static("parse_summary", [](const std::string& token_str) {
-        auto result = CesiumITwinClient::AuthenticationToken::parse(token_str);
-        py::dict out;
-        out["has_value"] = py::bool_(result.value.has_value());
-        out["errors"] = py::cast(result.errors.errors);
-        out["warnings"] = py::cast(result.errors.warnings);
-        if (result.value) {
-          out["token"] = py::cast(result.value->getToken());
-          out["expiration_time"] = py::cast(result.value->getExpirationTime());
-        } else {
-          out["token"] = py::none();
-          out["expiration_time"] = py::none();
-        }
-        return out;
+      .def_static(
+          "parse_summary",
+          [](const std::string& token_str) {
+            auto result =
+                CesiumITwinClient::AuthenticationToken::parse(token_str);
+            py::dict out;
+            out["has_value"] = py::bool_(result.value.has_value());
+            out["errors"] = py::cast(result.errors.errors);
+            out["warnings"] = py::cast(result.errors.warnings);
+            if (result.value) {
+              out["token"] = py::cast(result.value->getToken());
+              out["expiration_time"] =
+                  py::cast(result.value->getExpirationTime());
+            } else {
+              out["token"] = py::none();
+              out["expiration_time"] = py::none();
+            }
+            return out;
+          })
+      .def("__bool__", [](const CesiumITwinClient::AuthenticationToken& self) {
+        return self.isValid();
       });
 
   // --- PagedList<T> specializations ---

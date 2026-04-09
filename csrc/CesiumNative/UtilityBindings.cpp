@@ -640,7 +640,30 @@ void initUtilityBindings(py::module& m) {
       .def_readwrite("g", &CesiumUtility::Color::g)
       .def_readwrite("b", &CesiumUtility::Color::b)
       .def_readwrite("a", &CesiumUtility::Color::a)
-      .def("to_rgba32", &CesiumUtility::Color::toRgba32);
+      .def("to_rgba32", &CesiumUtility::Color::toRgba32)
+      .def(
+          "__repr__",
+          [](const CesiumUtility::Color& self) {
+            return "Color(r=" + std::to_string(self.r) +
+                   ", g=" + std::to_string(self.g) +
+                   ", b=" + std::to_string(self.b) +
+                   ", a=" + std::to_string(self.a) + ")";
+          })
+      .def(
+          "__eq__",
+          [](const CesiumUtility::Color& a, const CesiumUtility::Color& b) {
+            return a.r == b.r && a.g == b.g && a.b == b.b && a.a == b.a;
+          },
+          py::is_operator())
+      .def(
+          "__ne__",
+          [](const CesiumUtility::Color& a, const CesiumUtility::Color& b) {
+            return a.r != b.r || a.g != b.g || a.b != b.b || a.a != b.a;
+          },
+          py::is_operator())
+      .def("__hash__", [](const CesiumUtility::Color& self) {
+        return std::hash<uint32_t>{}(self.toRgba32());
+      });
 
   // ── Credit types ──────────────────────────────────────────────────────────
   py::enum_<CesiumUtility::CreditFilteringMode>(m, "CreditFilteringMode")
@@ -692,7 +715,7 @@ void initUtilityBindings(py::module& m) {
           py::arg("show_on_screen") = false,
           "Create a credit associated with a source.")
       .def(
-          "get_credit_source",
+          "credit_source",
           [](const CesiumUtility::CreditSystem& self,
              CesiumUtility::Credit credit) -> py::object {
             const auto* p = self.getCreditSource(credit);
@@ -711,12 +734,17 @@ void initUtilityBindings(py::module& m) {
           &CesiumUtility::CreditSystem::removeCreditReference,
           py::arg("credit"))
       .def(
-          "get_snapshot",
+          "snapshot",
           &CesiumUtility::CreditSystem::getSnapshot,
           py::arg("filtering_mode") =
               CesiumUtility::CreditFilteringMode::UniqueHtml,
           py::return_value_policy::reference_internal,
-          "Get a snapshot of active and removed credits.");
+          "Get a snapshot of active and removed credits.")
+      .def_property_readonly(
+          "default_credit_source",
+          &CesiumUtility::CreditSystem::getDefaultCreditSource,
+          py::return_value_policy::reference_internal,
+          "The default CreditSource used when none is specified.");
 
   py::class_<CesiumUtility::CreditSource>(m, "CreditSource")
       .def(py::init<CesiumUtility::CreditSystem&>(), py::arg("credit_system"))

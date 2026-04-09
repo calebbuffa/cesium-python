@@ -539,6 +539,40 @@ public:
   }
 };
 
+// ---------------------------------------------------------------------------
+// Trampoline for TilesetContentLoader – allows Python subclasses to implement
+// the two pure-virtual methods loadTileContent and createTileChildren.
+// ---------------------------------------------------------------------------
+class PyTilesetContentLoader
+    : public Cesium3DTilesSelection::TilesetContentLoader {
+public:
+  using Cesium3DTilesSelection::TilesetContentLoader::TilesetContentLoader;
+
+  CesiumAsync::Future<Cesium3DTilesSelection::TileLoadResult>
+  loadTileContent(const Cesium3DTilesSelection::TileLoadInput& input) override {
+    py::gil_scoped_acquire gil;
+    PYBIND11_OVERRIDE_PURE_NAME(
+        CesiumAsync::Future<Cesium3DTilesSelection::TileLoadResult>,
+        Cesium3DTilesSelection::TilesetContentLoader,
+        "load_tile_content",
+        loadTileContent,
+        input);
+  }
+
+  Cesium3DTilesSelection::TileChildrenResult createTileChildren(
+      const Cesium3DTilesSelection::Tile& tile,
+      const CesiumGeospatial::Ellipsoid& ellipsoid) override {
+    py::gil_scoped_acquire gil;
+    PYBIND11_OVERRIDE_PURE_NAME(
+        Cesium3DTilesSelection::TileChildrenResult,
+        Cesium3DTilesSelection::TilesetContentLoader,
+        "create_tile_children",
+        createTileChildren,
+        tile,
+        ellipsoid);
+  }
+};
+
 py::array_t<double, py::array::c_style | py::array::forcecast>
 require1dArray(const py::handle& value) {
   auto arr = py::reinterpret_borrow<
@@ -762,7 +796,9 @@ void initTiles3dSelectionBindings(py::module& m) {
 
   py::class_<PyGltfModifier, std::shared_ptr<PyGltfModifier>>(m, "GltfModifier")
       .def(py::init<>())
-      .def("get_current_version", &PyGltfModifier::getCurrentVersion)
+      .def_property_readonly(
+          "current_version",
+          &PyGltfModifier::getCurrentVersion)
       .def("is_active", &PyGltfModifier::isActive)
       .def("trigger", &PyGltfModifier::trigger)
       .def(
@@ -840,8 +876,8 @@ void initTiles3dSelectionBindings(py::module& m) {
           py::arg("ellipsoid") = CesiumGeospatial::Ellipsoid::WGS84,
           "Estimate the bounding GlobeRectangle. Returns None if not "
           "estimable.")
-      .def(
-          "get_bounding_region",
+      .def_property_readonly(
+          "bounding_region",
           [](const Cesium3DTilesSelection::BoundingVolume& self)
               -> std::optional<CesiumGeospatial::BoundingRegion> {
             const auto* ptr =
@@ -851,7 +887,79 @@ void initTiles3dSelectionBindings(py::module& m) {
               return *ptr;
             return std::nullopt;
           },
-          "Get the BoundingRegion if this volume is one, else None.");
+          "Get the BoundingRegion if this volume is one, else None.")
+      .def_static(
+          "from_obb",
+          [](const CesiumGeometry::OrientedBoundingBox& obb) {
+            return Cesium3DTilesSelection::BoundingVolume(obb);
+          },
+          py::arg("obb"),
+          "Construct a BoundingVolume wrapping an OrientedBoundingBox.")
+      .def_static(
+          "from_sphere",
+          [](const CesiumGeometry::BoundingSphere& sphere) {
+            return Cesium3DTilesSelection::BoundingVolume(sphere);
+          },
+          py::arg("sphere"),
+          "Construct a BoundingVolume wrapping a BoundingSphere.")
+      .def_static(
+          "from_region",
+          [](const CesiumGeospatial::BoundingRegion& region) {
+            return Cesium3DTilesSelection::BoundingVolume(region);
+          },
+          py::arg("region"),
+          "Construct a BoundingVolume wrapping a BoundingRegion.")
+      .def_static(
+          "from_loose_region",
+          [](const CesiumGeospatial::BoundingRegionWithLooseFittingHeights&
+                 region) {
+            return Cesium3DTilesSelection::BoundingVolume(region);
+          },
+          py::arg("region"),
+          "Construct a BoundingVolume wrapping a "
+          "BoundingRegionWithLooseFittingHeights.")
+      .def_static(
+          "from_s2",
+          [](const CesiumGeospatial::S2CellBoundingVolume& s2) {
+            return Cesium3DTilesSelection::BoundingVolume(s2);
+          },
+          py::arg("s2"),
+          "Construct a BoundingVolume wrapping an S2CellBoundingVolume.")
+      .def_static(
+          "from_cylinder",
+          [](const CesiumGeometry::BoundingCylinderRegion& cylinder) {
+            return Cesium3DTilesSelection::BoundingVolume(cylinder);
+          },
+          py::arg("cylinder"),
+          "Construct a BoundingVolume wrapping a BoundingCylinderRegion.")
+      .def("__repr__", [](const Cesium3DTilesSelection::BoundingVolume& self) {
+        return std::visit(
+            [](const auto& v) -> std::string {
+              using T = std::decay_t<decltype(v)>;
+              if constexpr (std::is_same_v<T, CesiumGeometry::BoundingSphere>)
+                return "BoundingVolume(BoundingSphere(radius=" +
+                       std::to_string(v.getRadius()) + "))";
+              if constexpr (
+                  std::is_same_v<T, CesiumGeometry::OrientedBoundingBox>)
+                return "BoundingVolume(OrientedBoundingBox)";
+              if constexpr (std::is_same_v<T, CesiumGeospatial::BoundingRegion>)
+                return "BoundingVolume(BoundingRegion)";
+              if constexpr (
+                  std::is_same_v<
+                      T,
+                      CesiumGeospatial::BoundingRegionWithLooseFittingHeights>)
+                return "BoundingVolume("
+                       "BoundingRegionWithLooseFittingHeights)";
+              if constexpr (
+                  std::is_same_v<T, CesiumGeospatial::S2CellBoundingVolume>)
+                return "BoundingVolume(S2CellBoundingVolume)";
+              if constexpr (
+                  std::is_same_v<T, CesiumGeometry::BoundingCylinderRegion>)
+                return "BoundingVolume(BoundingCylinderRegion)";
+              return "BoundingVolume(unknown)";
+            },
+            self);
+      });
 
   py::class_<Cesium3DTilesSelection::TilesetContentOptions>(
       m,
@@ -915,6 +1023,37 @@ void initTiles3dSelectionBindings(py::module& m) {
           [](const Cesium3DTilesSelection::TileLoadInput& self) {
             return static_cast<bool>(self.pLogger);
           });
+
+  py::class_<Cesium3DTilesSelection::TileChildrenResult>(
+      m,
+      "TileChildrenResult")
+      .def(py::init<>())
+      .def_readwrite(
+          "state",
+          &Cesium3DTilesSelection::TileChildrenResult::state)
+      .def(
+          "add_child",
+          [](Cesium3DTilesSelection::TileChildrenResult& self,
+             Cesium3DTilesSelection::TilesetContentLoader* pLoader)
+              -> Cesium3DTilesSelection::Tile& {
+            self.children.emplace_back(pLoader);
+            return self.children.back();
+          },
+          py::return_value_policy::reference_internal,
+          py::arg("loader"),
+          "Append a new child Tile (owned by this result) and return a "
+          "reference to it.")
+      .def_property_readonly(
+          "children",
+          [](Cesium3DTilesSelection::TileChildrenResult& self) {
+            py::list out;
+            for (Cesium3DTilesSelection::Tile& child : self.children) {
+              out.append(py::cast(&child, py::return_value_policy::reference));
+            }
+            return out;
+          },
+          py::return_value_policy::reference_internal,
+          "Read-only view of the children list; use add_child() to append.");
 
   py::class_<
       Cesium3DTilesSelection::IPrepareRendererResources,
@@ -1012,6 +1151,18 @@ void initTiles3dSelectionBindings(py::module& m) {
             return "RasterOverlayCollection(size=" +
                    std::to_string(self.size()) + ")";
           })
+      .def(
+          "__contains__",
+          [](const Cesium3DTilesSelection::RasterOverlayCollection& self,
+             const CesiumUtility::IntrusivePointer<
+                 CesiumRasterOverlays::RasterOverlay>& pOverlay) {
+            for (auto it = self.begin(); it != self.end(); ++it) {
+              if (*it == pOverlay)
+                return true;
+            }
+            return false;
+          },
+          py::arg("overlay"))
       .def("__len__", &Cesium3DTilesSelection::RasterOverlayCollection::size)
       .def(
           "__iter__",
@@ -1186,13 +1337,20 @@ void initTiles3dSelectionBindings(py::module& m) {
 
   py::class_<
       Cesium3DTilesSelection::TilesetContentLoader,
+      PyTilesetContentLoader,
       std::shared_ptr<Cesium3DTilesSelection::TilesetContentLoader>>(
       m,
       "TilesetContentLoader")
+      .def(py::init<>())
       .def(
           "load_tile_content",
           &Cesium3DTilesSelection::TilesetContentLoader::loadTileContent,
           py::arg("input"))
+      .def(
+          "create_tile_children",
+          &Cesium3DTilesSelection::TilesetContentLoader::createTileChildren,
+          py::arg("tile"),
+          py::arg("ellipsoid") = CesiumGeospatial::Ellipsoid::WGS84)
       .def(
           "has_height_sampler",
           [](Cesium3DTilesSelection::TilesetContentLoader& self) {
@@ -1480,25 +1638,53 @@ void initTiles3dSelectionBindings(py::module& m) {
       m,
       "TilesetSharedAssetSystem")
       .def_static(
-          "get_default",
+          "default_system",
           &Cesium3DTilesSelection::TilesetSharedAssetSystem::getDefault);
 
   m.def(
       "create_tile_id_string",
-      [](const std::string& tile_content_url) {
-        Cesium3DTilesSelection::TileID tileId = tile_content_url;
+      [](const py::object& value) {
+        Cesium3DTilesSelection::TileID tileId;
+        if (py::isinstance<py::str>(value)) {
+          tileId = value.cast<std::string>();
+        } else if (py::isinstance<CesiumGeometry::QuadtreeTileID>(value)) {
+          tileId = value.cast<CesiumGeometry::QuadtreeTileID>();
+        } else if (py::isinstance<CesiumGeometry::OctreeTileID>(value)) {
+          tileId = value.cast<CesiumGeometry::OctreeTileID>();
+        } else if (
+            py::isinstance<CesiumGeometry::UpsampledQuadtreeNode>(value)) {
+          tileId = value.cast<CesiumGeometry::UpsampledQuadtreeNode>();
+        } else {
+          throw py::type_error(
+              "Expected str, QuadtreeTileID, OctreeTileID, or "
+              "UpsampledQuadtreeNode");
+        }
         return Cesium3DTilesSelection::TileIdUtilities::createTileIdString(
             tileId);
       },
-      py::arg("tile_content_url"));
+      py::arg("tile_id"));
 
   m.def(
       "is_loadable_tile_id",
-      [](const std::string& tile_content_url) {
-        Cesium3DTilesSelection::TileID tileId = tile_content_url;
+      [](const py::object& value) {
+        Cesium3DTilesSelection::TileID tileId;
+        if (py::isinstance<py::str>(value)) {
+          tileId = value.cast<std::string>();
+        } else if (py::isinstance<CesiumGeometry::QuadtreeTileID>(value)) {
+          tileId = value.cast<CesiumGeometry::QuadtreeTileID>();
+        } else if (py::isinstance<CesiumGeometry::OctreeTileID>(value)) {
+          tileId = value.cast<CesiumGeometry::OctreeTileID>();
+        } else if (
+            py::isinstance<CesiumGeometry::UpsampledQuadtreeNode>(value)) {
+          tileId = value.cast<CesiumGeometry::UpsampledQuadtreeNode>();
+        } else {
+          throw py::type_error(
+              "Expected str, QuadtreeTileID, OctreeTileID, or "
+              "UpsampledQuadtreeNode");
+        }
         return Cesium3DTilesSelection::TileIdUtilities::isLoadable(tileId);
       },
-      py::arg("tile_content_url"));
+      py::arg("tile_id"));
 
   py::class_<Cesium3DTilesSelection::TileUnknownContent>(
       m,
@@ -1538,15 +1724,33 @@ void initTiles3dSelectionBindings(py::module& m) {
       .def(
           py::init<Cesium3DTilesSelection::TileEmptyContent>(),
           py::arg("content"))
-      .def(
-          "set_unknown_content",
-          [](Cesium3DTilesSelection::TileContent& self) {
-            self.setContentKind(Cesium3DTilesSelection::TileUnknownContent{});
-          })
-      .def(
-          "set_empty_content",
-          [](Cesium3DTilesSelection::TileContent& self) {
-            self.setContentKind(Cesium3DTilesSelection::TileEmptyContent{});
+      .def_property(
+          "content_kind",
+          [](const Cesium3DTilesSelection::TileContent& self) -> py::object {
+            if (self.isUnknownContent())
+              return py::cast(Cesium3DTilesSelection::TileUnknownContent{});
+            if (self.isEmptyContent())
+              return py::cast(Cesium3DTilesSelection::TileEmptyContent{});
+            if (self.isExternalContent())
+              return py::cast(Cesium3DTilesSelection::TileExternalContent{});
+            if (auto* p = self.getRenderContent())
+              return py::cast(p, py::return_value_policy::reference);
+            return py::none();
+          },
+          [](Cesium3DTilesSelection::TileContent& self,
+             const py::object& value) {
+            if (py::isinstance<Cesium3DTilesSelection::TileUnknownContent>(
+                    value)) {
+              self.setContentKind(Cesium3DTilesSelection::TileUnknownContent{});
+            } else if (
+                py::isinstance<Cesium3DTilesSelection::TileEmptyContent>(
+                    value)) {
+              self.setContentKind(Cesium3DTilesSelection::TileEmptyContent{});
+            } else {
+              throw py::type_error(
+                  "content_kind may only be set to TileUnknownContent or "
+                  "TileEmptyContent from Python");
+            }
           })
       .def(
           "is_unknown_content",
@@ -1600,18 +1804,41 @@ void initTiles3dSelectionBindings(py::module& m) {
       .def_readwrite(
           "gltf_up_axis",
           &Cesium3DTilesSelection::TileLoadResult::glTFUpAxis)
-      .def_readonly(
+      .def_readwrite(
           "updated_bounding_volume",
           &Cesium3DTilesSelection::TileLoadResult::updatedBoundingVolume)
-      .def_readonly(
+      .def_readwrite(
           "updated_content_bounding_volume",
           &Cesium3DTilesSelection::TileLoadResult::updatedContentBoundingVolume)
-      .def_readonly(
+      .def_readwrite(
           "initial_bounding_volume",
           &Cesium3DTilesSelection::TileLoadResult::initialBoundingVolume)
-      .def_readonly(
+      .def_readwrite(
           "initial_content_bounding_volume",
           &Cesium3DTilesSelection::TileLoadResult::initialContentBoundingVolume)
+      .def_readwrite(
+          "raster_overlay_details",
+          &Cesium3DTilesSelection::TileLoadResult::rasterOverlayDetails)
+      .def_property(
+          "tile_initializer",
+          [](const Cesium3DTilesSelection::TileLoadResult& self) -> py::object {
+            if (self.tileInitializer)
+              return py::cpp_function(self.tileInitializer);
+            return py::none();
+          },
+          [](Cesium3DTilesSelection::TileLoadResult& self,
+             const py::object& fn) {
+            if (fn.is_none()) {
+              self.tileInitializer = nullptr;
+            } else {
+              self.tileInitializer = [fn](Cesium3DTilesSelection::Tile& tile) {
+                py::gil_scoped_acquire gil;
+                fn(py::cast(&tile, py::return_value_policy::reference));
+              };
+            }
+          },
+          "Callback invoked on the main thread after tile load, "
+          "receiving the Tile as its only argument. Set to None to clear.")
       .def_readwrite(
           "asset_accessor",
           &Cesium3DTilesSelection::TileLoadResult::pAssetAccessor)
@@ -1655,7 +1882,7 @@ void initTiles3dSelectionBindings(py::module& m) {
             }
             return std::string("unrecognized");
           })
-      .def_property_readonly(
+      .def_property(
           "model",
           [](Cesium3DTilesSelection::TileLoadResult& self) -> py::object {
             if (auto* pModel =
@@ -1663,7 +1890,77 @@ void initTiles3dSelectionBindings(py::module& m) {
               return py::cast(pModel, py::return_value_policy::reference);
             }
             return py::none();
-          });
+          },
+          [](Cesium3DTilesSelection::TileLoadResult& self,
+             CesiumGltf::Model model) { self.contentKind = std::move(model); })
+      .def_property(
+          "content_kind",
+          [](Cesium3DTilesSelection::TileLoadResult& self) -> py::object {
+            return std::visit(
+                [](auto& v) -> py::object { return py::cast(v); },
+                self.contentKind);
+          },
+          [](Cesium3DTilesSelection::TileLoadResult& self,
+             const py::object& value) {
+            if (py::isinstance<CesiumGltf::Model>(value)) {
+              self.contentKind = value.cast<CesiumGltf::Model>();
+            } else if (
+                py::isinstance<Cesium3DTilesSelection::TileEmptyContent>(
+                    value)) {
+              self.contentKind = Cesium3DTilesSelection::TileEmptyContent{};
+            } else if (
+                py::isinstance<Cesium3DTilesSelection::TileExternalContent>(
+                    value)) {
+              self.contentKind = Cesium3DTilesSelection::TileExternalContent{};
+            } else if (
+                py::isinstance<Cesium3DTilesSelection::TileUnknownContent>(
+                    value)) {
+              self.contentKind = Cesium3DTilesSelection::TileUnknownContent{};
+            } else {
+              throw py::type_error(
+                  "content_kind must be Model, TileEmptyContent, "
+                  "TileExternalContent, or TileUnknownContent");
+            }
+          },
+          "Get or set the content variant. Assign a Model, TileEmptyContent, "
+          "TileExternalContent, or TileUnknownContent.")
+      .def("__repr__", [](const Cesium3DTilesSelection::TileLoadResult& self) {
+        std::string state_name;
+        switch (self.state) {
+        case Cesium3DTilesSelection::TileLoadResultState::Success:
+          state_name = "Success";
+          break;
+        case Cesium3DTilesSelection::TileLoadResultState::RetryLater:
+          state_name = "RetryLater";
+          break;
+        case Cesium3DTilesSelection::TileLoadResultState::Failed:
+          state_name = "Failed";
+          break;
+        default:
+          state_name = "Unknown";
+          break;
+        }
+        std::string content_name;
+        if (std::holds_alternative<Cesium3DTilesSelection::TileUnknownContent>(
+                self.contentKind)) {
+          content_name = "unknown";
+        } else if (
+            std::holds_alternative<Cesium3DTilesSelection::TileEmptyContent>(
+                self.contentKind)) {
+          content_name = "empty";
+        } else if (
+            std::holds_alternative<Cesium3DTilesSelection::TileExternalContent>(
+                self.contentKind)) {
+          content_name = "external";
+        } else if (
+            std::holds_alternative<CesiumGltf::Model>(self.contentKind)) {
+          content_name = "gltf_model";
+        } else {
+          content_name = "unrecognized";
+        }
+        return "TileLoadResult(state=" + state_name +
+               ", content=" + content_name + ")";
+      });
 
   py::enum_<Cesium3DTilesSelection::TileLoadState>(m, "TileLoadState")
       .value("Unloading", Cesium3DTilesSelection::TileLoadState::Unloading)
@@ -1692,9 +1989,10 @@ void initTiles3dSelectionBindings(py::module& m) {
           [](const Cesium3DTilesSelection::Tile& self) {
             return self.getChildren().size();
           })
-      .def_property_readonly(
+      .def_property(
           "bounding_volume",
           &Cesium3DTilesSelection::Tile::getBoundingVolume,
+          &Cesium3DTilesSelection::Tile::setBoundingVolume,
           py::return_value_policy::reference_internal)
       .def_property_readonly(
           "viewer_request_volume",
@@ -1724,6 +2022,38 @@ void initTiles3dSelectionBindings(py::module& m) {
           [](Cesium3DTilesSelection::Tile& self, const py::object& transform) {
             self.setTransform(toDmat<4>(transform));
           })
+      .def_property(
+          "tile_id",
+          [](const Cesium3DTilesSelection::Tile& self) -> py::object {
+            return std::visit(
+                [](const auto& v) -> py::object { return py::cast(v); },
+                self.getTileID());
+          },
+          [](Cesium3DTilesSelection::Tile& self, const py::object& value) {
+            if (py::isinstance<py::str>(value)) {
+              self.setTileID(
+                  Cesium3DTilesSelection::TileID(value.cast<std::string>()));
+            } else if (py::isinstance<CesiumGeometry::QuadtreeTileID>(value)) {
+              self.setTileID(
+                  Cesium3DTilesSelection::TileID(
+                      value.cast<CesiumGeometry::QuadtreeTileID>()));
+            } else if (py::isinstance<CesiumGeometry::OctreeTileID>(value)) {
+              self.setTileID(
+                  Cesium3DTilesSelection::TileID(
+                      value.cast<CesiumGeometry::OctreeTileID>()));
+            } else if (
+                py::isinstance<CesiumGeometry::UpsampledQuadtreeNode>(value)) {
+              self.setTileID(
+                  Cesium3DTilesSelection::TileID(
+                      value.cast<CesiumGeometry::UpsampledQuadtreeNode>()));
+            } else {
+              throw py::type_error(
+                  "tile_id must be str, QuadtreeTileID, OctreeTileID, or "
+                  "UpsampledQuadtreeNode");
+            }
+          },
+          "Get or set the tile ID. Returns the actual typed variant member: "
+          "str, QuadtreeTileID, OctreeTileID, or UpsampledQuadtreeNode.")
       .def_property(
           "tile_id_string",
           [](const Cesium3DTilesSelection::Tile& self) {
@@ -1912,6 +2242,15 @@ void initTiles3dSelectionBindings(py::module& m) {
       .def_readwrite(
           "frame_number",
           &Cesium3DTilesSelection::ViewUpdateResult::frameNumber)
+      .def(
+          "__repr__",
+          [](const Cesium3DTilesSelection::ViewUpdateResult& self) {
+            return "ViewUpdateResult(tiles_to_render=" +
+                   std::to_string(self.tilesToRenderThisFrame.size()) +
+                   ", tiles_visited=" + std::to_string(self.tilesVisited) +
+                   ", worker_queue=" +
+                   std::to_string(self.workerThreadTileLoadQueueLength) + ")";
+          })
       .def_property_readonly(
           "tile_positions",
           [](const Cesium3DTilesSelection::ViewUpdateResult& self) {
@@ -2037,6 +2376,36 @@ void initTiles3dSelectionBindings(py::module& m) {
           py::arg("view_matrix"),
           py::arg("projection_matrix"),
           py::arg("viewport_size"))
+      .def(
+          py::init([](const py::object& position,
+                      const py::object& direction,
+                      const py::object& up,
+                      const py::object& viewport_size,
+                      double left,
+                      double right,
+                      double bottom,
+                      double top,
+                      const CesiumGeospatial::Ellipsoid& ellipsoid) {
+            return Cesium3DTilesSelection::ViewState(
+                toDvec<3>(position),
+                toDvec<3>(direction),
+                toDvec<3>(up),
+                toDvec<2>(viewport_size),
+                left,
+                right,
+                bottom,
+                top,
+                ellipsoid);
+          }),
+          py::arg("position"),
+          py::arg("direction"),
+          py::arg("up"),
+          py::arg("viewport_size"),
+          py::arg("left"),
+          py::arg("right"),
+          py::arg("bottom"),
+          py::arg("top"),
+          py::arg("ellipsoid") = CesiumGeospatial::Ellipsoid::WGS84)
       .def_property_readonly(
           "position",
           [](py::object self_obj) {
@@ -2064,10 +2433,10 @@ void initTiles3dSelectionBindings(py::module& m) {
             return toNumpyView(self.getViewportSize(), self_obj);
           })
       .def_property_readonly(
-          "horizontalFieldOfView",
+          "horizontal_field_of_view",
           &Cesium3DTilesSelection::ViewState::getHorizontalFieldOfView)
       .def_property_readonly(
-          "verticalFieldOfView",
+          "vertical_field_of_view",
           &Cesium3DTilesSelection::ViewState::getVerticalFieldOfView)
       .def_property_readonly(
           "view_matrix",
@@ -2326,7 +2695,7 @@ void initTiles3dSelectionBindings(py::module& m) {
           py::overload_cast<>(&Cesium3DTilesSelection::Tileset::getOverlays),
           py::return_value_policy::reference_internal)
       .def(
-          "set_show_credits_on_screen",
+          "show_credits_on_screen",
           &Cesium3DTilesSelection::Tileset::setShowCreditsOnScreen,
           py::arg("show_credits_on_screen"))
       .def_property_readonly(

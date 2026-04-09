@@ -545,18 +545,25 @@ void initAsyncBindings(py::module& m) {
   py::class_<
       CesiumAsync::IAssetResponse,
       std::shared_ptr<CesiumAsync::IAssetResponse>>(m, "IAssetResponse")
-      .def("status_code", &CesiumAsync::IAssetResponse::statusCode)
-      .def("content_type", &CesiumAsync::IAssetResponse::contentType)
-      .def(
+      .def_property_readonly(
+          "status_code",
+          &CesiumAsync::IAssetResponse::statusCode)
+      .def_property_readonly(
+          "content_type",
+          &CesiumAsync::IAssetResponse::contentType)
+      .def_property_readonly(
           "headers",
           [](const CesiumAsync::IAssetResponse& self) {
             return CesiumPython::headersToPyDict(self.headers());
           })
-      .def("data", [](const CesiumAsync::IAssetResponse& self) {
-        py::handle base = py::cast(&self, py::return_value_policy::reference);
-        auto d = self.data();
-        return CesiumPython::bytesToNumpyView(d.data(), d.size(), base);
-      });
+      .def_property_readonly(
+          "data",
+          [](const CesiumAsync::IAssetResponse& self) {
+            py::handle base =
+                py::cast(&self, py::return_value_policy::reference);
+            auto d = self.data();
+            return CesiumPython::bytesToNumpyView(d.data(), d.size(), base);
+          });
 
   py::class_<
       PyAssetResponse,
@@ -581,14 +588,14 @@ void initAsyncBindings(py::module& m) {
   py::class_<
       CesiumAsync::IAssetRequest,
       std::shared_ptr<CesiumAsync::IAssetRequest>>(m, "IAssetRequest")
-      .def("method", &CesiumAsync::IAssetRequest::method)
-      .def("url", &CesiumAsync::IAssetRequest::url)
-      .def(
+      .def_property_readonly("method", &CesiumAsync::IAssetRequest::method)
+      .def_property_readonly("url", &CesiumAsync::IAssetRequest::url)
+      .def_property_readonly(
           "headers",
           [](const CesiumAsync::IAssetRequest& self) {
             return CesiumPython::headersToPyDict(self.headers());
           })
-      .def(
+      .def_property_readonly(
           "response",
           [](const CesiumAsync::IAssetRequest& self) -> py::object {
             const CesiumAsync::IAssetResponse* response = self.response();

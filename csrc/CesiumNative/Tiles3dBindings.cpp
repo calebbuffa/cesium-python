@@ -37,6 +37,7 @@
 #include <pybind11/stl.h>
 
 #include <cstddef>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -438,6 +439,40 @@ void initTiles3dBindings(py::module& m) {
       .def(
           "is_extension_required",
           &Cesium3DTiles::Tileset::isExtensionRequired)
+      .def(
+          "for_each_tile",
+          [](const Cesium3DTiles::Tileset& self, const py::function& callback) {
+            py::gil_scoped_release release;
+            self.forEachTile([&callback](
+                                 const Cesium3DTiles::Tileset& tileset,
+                                 const Cesium3DTiles::Tile& tile,
+                                 const glm::dmat4& transform) {
+              py::gil_scoped_acquire acquire;
+              callback(tileset, tile, CesiumPython::toNumpy(transform));
+            });
+          },
+          py::arg("callback"),
+          "Call callback(tileset, tile, transform) for every explicit tile.")
+      .def(
+          "for_each_content",
+          [](const Cesium3DTiles::Tileset& self, const py::function& callback) {
+            py::gil_scoped_release release;
+            self.forEachContent([&callback](
+                                    const Cesium3DTiles::Tileset& tileset,
+                                    const Cesium3DTiles::Tile& tile,
+                                    const Cesium3DTiles::Content& content,
+                                    const glm::dmat4& transform) {
+              py::gil_scoped_acquire acquire;
+              callback(
+                  tileset,
+                  tile,
+                  content,
+                  CesiumPython::toNumpy(transform));
+            });
+          },
+          py::arg("callback"),
+          "Call callback(tileset, tile, content, transform) for every explicit "
+          "tile content.")
       .def_property_readonly(
           "size_bytes",
           &Cesium3DTiles::Tileset::getSizeBytes);

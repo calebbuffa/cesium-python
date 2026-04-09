@@ -108,7 +108,28 @@ void initIonClientBindings(py::module& m) {
       .def_readwrite("status", &CesiumIonClient::Asset::status)
       .def_readwrite(
           "percent_complete",
-          &CesiumIonClient::Asset::percentComplete);
+          &CesiumIonClient::Asset::percentComplete)
+      .def(
+          "__repr__",
+          [](const CesiumIonClient::Asset& self) {
+            return "Asset(id=" + std::to_string(self.id) +
+                   ", name=" + self.name + ")";
+          })
+      .def(
+          "__eq__",
+          [](const CesiumIonClient::Asset& a, const CesiumIonClient::Asset& b) {
+            return a.id == b.id;
+          },
+          py::is_operator())
+      .def(
+          "__ne__",
+          [](const CesiumIonClient::Asset& a, const CesiumIonClient::Asset& b) {
+            return a.id != b.id;
+          },
+          py::is_operator())
+      .def("__hash__", [](const CesiumIonClient::Asset& self) {
+        return std::hash<int64_t>{}(self.id);
+      });
 
   py::class_<CesiumIonClient::Assets>(m, "Assets")
       .def(py::init<>())
@@ -126,7 +147,27 @@ void initIonClientBindings(py::module& m) {
       .def_readwrite("asset_ids", &CesiumIonClient::Token::assetIds)
       .def_readwrite("is_default", &CesiumIonClient::Token::isDefault)
       .def_readwrite("allowed_urls", &CesiumIonClient::Token::allowedUrls)
-      .def_readwrite("scopes", &CesiumIonClient::Token::scopes);
+      .def_readwrite("scopes", &CesiumIonClient::Token::scopes)
+      .def(
+          "__repr__",
+          [](const CesiumIonClient::Token& self) {
+            return "Token(id=" + self.id + ", name=" + self.name + ")";
+          })
+      .def(
+          "__eq__",
+          [](const CesiumIonClient::Token& a, const CesiumIonClient::Token& b) {
+            return a.id == b.id;
+          },
+          py::is_operator())
+      .def(
+          "__ne__",
+          [](const CesiumIonClient::Token& a, const CesiumIonClient::Token& b) {
+            return a.id != b.id;
+          },
+          py::is_operator())
+      .def("__hash__", [](const CesiumIonClient::Token& self) {
+        return std::hash<std::string>{}(self.id);
+      });
 
   py::class_<CesiumIonClient::TokenList>(m, "TokenList")
       .def(py::init<>())
@@ -205,6 +246,7 @@ void initIonClientBindings(py::module& m) {
           &CesiumIonClient::GeocoderAttribution::showOnScreen);
 
   py::class_<CesiumIonClient::GeocoderFeature>(m, "GeocoderFeature")
+      .def(py::init<>())
       .def_readwrite(
           "display_name",
           &CesiumIonClient::GeocoderFeature::displayName)
@@ -232,20 +274,26 @@ void initIonClientBindings(py::module& m) {
           "expiration_time",
           &CesiumIonClient::LoginToken::getExpirationTime)
       .def_property_readonly("token", &CesiumIonClient::LoginToken::getToken)
-      .def_static("parse_summary", [](const std::string& token_string) {
-        auto result = CesiumIonClient::LoginToken::parse(token_string);
-        py::dict out;
-        out["has_value"] = py::bool_(result.value.has_value());
-        out["errors"] = py::cast(result.errors.errors);
-        out["warnings"] = py::cast(result.errors.warnings);
-        if (result.value) {
-          out["token"] = py::cast(result.value->getToken());
-          out["expiration_time"] = py::cast(result.value->getExpirationTime());
-        } else {
-          out["token"] = py::none();
-          out["expiration_time"] = py::none();
-        }
-        return out;
+      .def_static(
+          "parse_summary",
+          [](const std::string& token_string) {
+            auto result = CesiumIonClient::LoginToken::parse(token_string);
+            py::dict out;
+            out["has_value"] = py::bool_(result.value.has_value());
+            out["errors"] = py::cast(result.errors.errors);
+            out["warnings"] = py::cast(result.errors.warnings);
+            if (result.value) {
+              out["token"] = py::cast(result.value->getToken());
+              out["expiration_time"] =
+                  py::cast(result.value->getExpirationTime());
+            } else {
+              out["token"] = py::none();
+              out["expiration_time"] = py::none();
+            }
+            return out;
+          })
+      .def("__bool__", [](const CesiumIonClient::LoginToken& self) {
+        return self.isValid();
       });
 
   // --- NoValue ---
@@ -377,10 +425,10 @@ void initIonClientBindings(py::module& m) {
           "refresh_token",
           &CesiumIonClient::Connection::getRefreshToken)
       .def_property_readonly(
-        "api_url",
-        [](const CesiumIonClient::Connection& self) {
-          return self.getApiUrl();
-        })
+          "api_url",
+          [](const CesiumIonClient::Connection& self) {
+            return self.getApiUrl();
+          })
       .def_property_readonly(
           "async_system",
           &CesiumIonClient::Connection::getAsyncSystem)
@@ -412,7 +460,7 @@ void initIonClientBindings(py::module& m) {
           py::arg("asset_accessor"),
           py::arg("api_url") = "https://api.cesium.com")
       .def_static(
-          "get_api_url_from_server",
+          "api_url_from_server",
           [](const CesiumAsync::AsyncSystem& asyncSystem,
              const std::shared_ptr<CesiumAsync::IAssetAccessor>& pAssetAccessor,
              const std::string& ionUrl) {

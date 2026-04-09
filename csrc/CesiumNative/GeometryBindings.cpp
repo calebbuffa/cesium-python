@@ -387,9 +387,9 @@ void initGeometryBindings(py::module& m) {
       .def_readwrite(
           "subtree_availability",
           &CesiumGeometry::AvailabilitySubtree::subtreeAvailability)
-      .def("get_buffers", &subtreeBuffersToPython)
-      .def(
-          "set_buffers",
+      .def_property(
+          "buffers",
+          &subtreeBuffersToPython,
           [](CesiumGeometry::AvailabilitySubtree& self,
              const py::iterable& buffers) {
             setSubtreeBuffersFromPython(self, buffers);
@@ -565,12 +565,30 @@ void initGeometryBindings(py::module& m) {
              const py::object& position) {
             return self.contains(toDvec<2>(position));
           })
-      .def("__repr__", [](const CesiumGeometry::Rectangle& self) {
-        return "Rectangle(x=[" + std::to_string(self.minimumX) + ", " +
-               std::to_string(self.maximumX) + "], y=[" +
-               std::to_string(self.minimumY) + ", " +
-               std::to_string(self.maximumY) + "])";
-      });
+      .def(
+          "__repr__",
+          [](const CesiumGeometry::Rectangle& self) {
+            return "Rectangle(x=[" + std::to_string(self.minimumX) + ", " +
+                   std::to_string(self.maximumX) + "], y=[" +
+                   std::to_string(self.minimumY) + ", " +
+                   std::to_string(self.maximumY) + "])";
+          })
+      .def(
+          "__eq__",
+          [](const CesiumGeometry::Rectangle& a,
+             const CesiumGeometry::Rectangle& b) {
+            return a.minimumX == b.minimumX && a.minimumY == b.minimumY &&
+                   a.maximumX == b.maximumX && a.maximumY == b.maximumY;
+          },
+          py::is_operator())
+      .def(
+          "__ne__",
+          [](const CesiumGeometry::Rectangle& a,
+             const CesiumGeometry::Rectangle& b) {
+            return a.minimumX != b.minimumX || a.minimumY != b.minimumY ||
+                   a.maximumX != b.maximumX || a.maximumY != b.maximumY;
+          },
+          py::is_operator());
 
   py::class_<CesiumGeometry::AxisAlignedBox>(m, "AxisAlignedBox")
       .def(py::init<>())
@@ -637,14 +655,34 @@ void initGeometryBindings(py::module& m) {
              const py::object& position) {
             return self.contains(toDvec<3>(position));
           })
-      .def("__repr__", [](const CesiumGeometry::AxisAlignedBox& self) {
-        return "AxisAlignedBox(min=[" + std::to_string(self.minimumX) + ", " +
-               std::to_string(self.minimumY) + ", " +
-               std::to_string(self.minimumZ) + "], max=[" +
-               std::to_string(self.maximumX) + ", " +
-               std::to_string(self.maximumY) + ", " +
-               std::to_string(self.maximumZ) + "])";
-      });
+      .def(
+          "__repr__",
+          [](const CesiumGeometry::AxisAlignedBox& self) {
+            return "AxisAlignedBox(min=[" + std::to_string(self.minimumX) +
+                   ", " + std::to_string(self.minimumY) + ", " +
+                   std::to_string(self.minimumZ) + "], max=[" +
+                   std::to_string(self.maximumX) + ", " +
+                   std::to_string(self.maximumY) + ", " +
+                   std::to_string(self.maximumZ) + "])";
+          })
+      .def(
+          "__eq__",
+          [](const CesiumGeometry::AxisAlignedBox& a,
+             const CesiumGeometry::AxisAlignedBox& b) {
+            return a.minimumX == b.minimumX && a.minimumY == b.minimumY &&
+                   a.minimumZ == b.minimumZ && a.maximumX == b.maximumX &&
+                   a.maximumY == b.maximumY && a.maximumZ == b.maximumZ;
+          },
+          py::is_operator())
+      .def(
+          "__ne__",
+          [](const CesiumGeometry::AxisAlignedBox& a,
+             const CesiumGeometry::AxisAlignedBox& b) {
+            return a.minimumX != b.minimumX || a.minimumY != b.minimumY ||
+                   a.minimumZ != b.minimumZ || a.maximumX != b.maximumX ||
+                   a.maximumY != b.maximumY || a.maximumZ != b.maximumZ;
+          },
+          py::is_operator());
 
   py::class_<CesiumGeometry::Plane>(m, "Plane")
       .def(py::init<>())
@@ -695,12 +733,28 @@ void initGeometryBindings(py::module& m) {
             return toNumpy(self.projectPointOntoPlane(toDvec<3>(point)));
           },
           py::arg("point"))
-      .def("__repr__", [](const CesiumGeometry::Plane& self) {
-        const auto& n = self.getNormal();
-        return "Plane(normal=[" + std::to_string(n.x) + ", " +
-               std::to_string(n.y) + ", " + std::to_string(n.z) +
-               "], distance=" + std::to_string(self.getDistance()) + ")";
-      });
+      .def(
+          "__repr__",
+          [](const CesiumGeometry::Plane& self) {
+            const auto& n = self.getNormal();
+            return "Plane(normal=[" + std::to_string(n.x) + ", " +
+                   std::to_string(n.y) + ", " + std::to_string(n.z) +
+                   "], distance=" + std::to_string(self.getDistance()) + ")";
+          })
+      .def(
+          "__eq__",
+          [](const CesiumGeometry::Plane& a, const CesiumGeometry::Plane& b) {
+            return a.getNormal() == b.getNormal() &&
+                   a.getDistance() == b.getDistance();
+          },
+          py::is_operator())
+      .def(
+          "__ne__",
+          [](const CesiumGeometry::Plane& a, const CesiumGeometry::Plane& b) {
+            return a.getNormal() != b.getNormal() ||
+                   a.getDistance() != b.getDistance();
+          },
+          py::is_operator());
 
   py::class_<CesiumGeometry::Ray>(m, "Ray")
       .def(
@@ -741,7 +795,21 @@ void initGeometryBindings(py::module& m) {
             return self.transform(toDmat<4>(mat));
           },
           py::arg("transformation"))
-      .def("__neg__", [](const CesiumGeometry::Ray& self) { return -self; });
+      .def("__neg__", [](const CesiumGeometry::Ray& self) { return -self; })
+      .def(
+          "__eq__",
+          [](const CesiumGeometry::Ray& a, const CesiumGeometry::Ray& b) {
+            return a.getOrigin() == b.getOrigin() &&
+                   a.getDirection() == b.getDirection();
+          },
+          py::is_operator())
+      .def(
+          "__ne__",
+          [](const CesiumGeometry::Ray& a, const CesiumGeometry::Ray& b) {
+            return a.getOrigin() != b.getOrigin() ||
+                   a.getDirection() != b.getDirection();
+          },
+          py::is_operator());
 
   py::class_<CesiumGeometry::BoundingSphere>(m, "BoundingSphere")
       .def(
@@ -801,7 +869,23 @@ void initGeometryBindings(py::module& m) {
           "transform",
           [](const CesiumGeometry::BoundingSphere& self,
              const py::object& mat) { return self.transform(toDmat<4>(mat)); },
-          py::arg("transformation"));
+          py::arg("transformation"))
+      .def(
+          "__eq__",
+          [](const CesiumGeometry::BoundingSphere& a,
+             const CesiumGeometry::BoundingSphere& b) {
+            return a.getCenter() == b.getCenter() &&
+                   a.getRadius() == b.getRadius();
+          },
+          py::is_operator())
+      .def(
+          "__ne__",
+          [](const CesiumGeometry::BoundingSphere& a,
+             const CesiumGeometry::BoundingSphere& b) {
+            return a.getCenter() != b.getCenter() ||
+                   a.getRadius() != b.getRadius();
+          },
+          py::is_operator());
 
   py::class_<CesiumGeometry::OrientedBoundingBox>(m, "OrientedBoundingBox")
       .def(
@@ -913,14 +997,32 @@ void initGeometryBindings(py::module& m) {
              const py::object& position) {
             return self.contains(toDvec<3>(position));
           })
-      .def("__repr__", [](const CesiumGeometry::OrientedBoundingBox& self) {
-        const auto& c = self.getCenter();
-        const auto& l = self.getLengths();
-        return "OrientedBoundingBox(center=[" + std::to_string(c.x) + ", " +
-               std::to_string(c.y) + ", " + std::to_string(c.z) +
-               "], lengths=[" + std::to_string(l.x) + ", " +
-               std::to_string(l.y) + ", " + std::to_string(l.z) + "])";
-      });
+      .def(
+          "__repr__",
+          [](const CesiumGeometry::OrientedBoundingBox& self) {
+            const auto& c = self.getCenter();
+            const auto& l = self.getLengths();
+            return "OrientedBoundingBox(center=[" + std::to_string(c.x) + ", " +
+                   std::to_string(c.y) + ", " + std::to_string(c.z) +
+                   "], lengths=[" + std::to_string(l.x) + ", " +
+                   std::to_string(l.y) + ", " + std::to_string(l.z) + "])";
+          })
+      .def(
+          "__eq__",
+          [](const CesiumGeometry::OrientedBoundingBox& a,
+             const CesiumGeometry::OrientedBoundingBox& b) {
+            return a.getCenter() == b.getCenter() &&
+                   a.getHalfAxes() == b.getHalfAxes();
+          },
+          py::is_operator())
+      .def(
+          "__ne__",
+          [](const CesiumGeometry::OrientedBoundingBox& a,
+             const CesiumGeometry::OrientedBoundingBox& b) {
+            return a.getCenter() != b.getCenter() ||
+                   a.getHalfAxes() != b.getHalfAxes();
+          },
+          py::is_operator());
 
   py::class_<CesiumGeometry::BoundingCylinderRegion>(
       m,
@@ -963,7 +1065,7 @@ void initGeometryBindings(py::module& m) {
           [](const CesiumGeometry::BoundingCylinderRegion& self) {
             return toNumpy(self.getCenter());
           })
-      .def(
+      .def_property_readonly(
           "translation",
           [](const CesiumGeometry::BoundingCylinderRegion& self) {
             return toNumpy(self.getTranslation());
@@ -976,12 +1078,12 @@ void initGeometryBindings(py::module& m) {
       .def_property_readonly(
           "height",
           &CesiumGeometry::BoundingCylinderRegion::getHeight)
-      .def(
+      .def_property_readonly(
           "radial_bounds",
           [](const CesiumGeometry::BoundingCylinderRegion& self) {
             return toNumpy(self.getRadialBounds());
           })
-      .def(
+      .def_property_readonly(
           "angular_bounds",
           [](const CesiumGeometry::BoundingCylinderRegion& self) {
             return toNumpy(self.getAngularBounds());
@@ -1028,8 +1130,13 @@ void initGeometryBindings(py::module& m) {
             return self.contains(toDvec<3>(position));
           })
       .def("__repr__", [](const CesiumGeometry::BoundingCylinderRegion& self) {
-        return "BoundingCylinderRegion(height=" +
-               std::to_string(self.getHeight()) + ")";
+        const glm::dvec3& c = self.getTranslation();
+        const glm::dvec2& r = self.getRadialBounds();
+        return "BoundingCylinderRegion(center=[" + std::to_string(c.x) + ", " +
+               std::to_string(c.y) + ", " + std::to_string(c.z) +
+               "], height=" + std::to_string(self.getHeight()) +
+               ", radial_bounds=[" + std::to_string(r.x) + ", " +
+               std::to_string(r.y) + "])";
       });
 
   py::class_<CesiumGeometry::CullingVolume>(m, "CullingVolume")
@@ -1564,229 +1671,265 @@ void initGeometryBindings(py::module& m) {
       });
 
   py::class_<CesiumGeometry::UpsampledQuadtreeNode>(m, "UpsampledQuadtreeNode")
-      .def_readwrite("tile_id", &CesiumGeometry::UpsampledQuadtreeNode::tileID);
-
-  py::class_<CesiumGeometry::OctreeTileID>(m, "OctreeTileID")
       .def(py::init<>())
       .def(
-          py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
-          py::arg("level"),
-          py::arg("x"),
-          py::arg("y"),
-          py::arg("z"))
-      .def_readwrite("level", &CesiumGeometry::OctreeTileID::level)
-      .def_readwrite("x", &CesiumGeometry::OctreeTileID::x)
-      .def_readwrite("y", &CesiumGeometry::OctreeTileID::y)
-      .def_readwrite("z", &CesiumGeometry::OctreeTileID::z)
+          py::init<CesiumGeometry::QuadtreeTileID>(),
+          py::arg("tile_id"))
+      .def_readwrite("tile_id", &CesiumGeometry::UpsampledQuadtreeNode::tileID)
       .def(
           "__eq__",
-          &CesiumGeometry::OctreeTileID::operator==,
+          [](const CesiumGeometry::UpsampledQuadtreeNode& a,
+             const CesiumGeometry::UpsampledQuadtreeNode& b) {
+    return a.tileID == b.tileID;
+          },
           py::is_operator())
       .def(
           "__ne__",
-          &CesiumGeometry::OctreeTileID::operator!=,
+          [](const CesiumGeometry::UpsampledQuadtreeNode& a,
+             const CesiumGeometry::UpsampledQuadtreeNode& b) {
+    return a.tileID != b.tileID;
+          },
           py::is_operator())
       .def(
           "__hash__",
-          [](const CesiumGeometry::OctreeTileID& self) {
-            std::size_t h = std::hash<uint32_t>{}(self.level);
-            h ^= std::hash<uint32_t>{}(self.x) + 0x9e3779b9 + (h << 6) +
-                 (h >> 2);
-            h ^= std::hash<uint32_t>{}(self.y) + 0x9e3779b9 + (h << 6) +
-                 (h >> 2);
-            h ^= std::hash<uint32_t>{}(self.z) + 0x9e3779b9 + (h << 6) +
-                 (h >> 2);
-            return h;
+          [](const CesiumGeometry::UpsampledQuadtreeNode& self) {
+    std::size_t h = std::hash<uint32_t>{}(self.tileID.level);
+    h ^=
+        std::hash<uint32_t>{}(self.tileID.x) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    h ^=
+        std::hash<uint32_t>{}(self.tileID.y) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    return h;
           })
-      .def("__repr__", [](const CesiumGeometry::OctreeTileID& self) {
-        return "OctreeTileID(level=" + std::to_string(self.level) +
-               ", x=" + std::to_string(self.x) +
-               ", y=" + std::to_string(self.y) +
-               ", z=" + std::to_string(self.z) + ")";
-      });
+      .def("__repr__", [](const CesiumGeometry::UpsampledQuadtreeNode& self) {
+    return "UpsampledQuadtreeNode(tile_id=QuadtreeTileID(level=" +
+           std::to_string(self.tileID.level) +
+           ", x=" + std::to_string(self.tileID.x) +
+           ", y=" + std::to_string(self.tileID.y) + "))";
 
-  py::class_<CesiumGeometry::QuadtreeTileRectangularRange>(
-      m,
-      "QuadtreeTileRectangularRange")
-      .def(py::init<>())
-      .def_readwrite(
-          "level",
-          &CesiumGeometry::QuadtreeTileRectangularRange::level)
-      .def_readwrite(
-          "minimum_x",
-          &CesiumGeometry::QuadtreeTileRectangularRange::minimumX)
-      .def_readwrite(
-          "minimum_y",
-          &CesiumGeometry::QuadtreeTileRectangularRange::minimumY)
-      .def_readwrite(
-          "maximum_x",
-          &CesiumGeometry::QuadtreeTileRectangularRange::maximumX)
-      .def_readwrite(
-          "maximum_y",
-          &CesiumGeometry::QuadtreeTileRectangularRange::maximumY);
+    py::class_<CesiumGeometry::OctreeTileID>(m, "OctreeTileID")
+        .def(py::init<>())
+        .def(
+            py::init<uint32_t, uint32_t, uint32_t, uint32_t>(),
+            py::arg("level"),
+            py::arg("x"),
+            py::arg("y"),
+            py::arg("z"))
+        .def_readwrite("level", &CesiumGeometry::OctreeTileID::level)
+        .def_readwrite("x", &CesiumGeometry::OctreeTileID::x)
+        .def_readwrite("y", &CesiumGeometry::OctreeTileID::y)
+        .def_readwrite("z", &CesiumGeometry::OctreeTileID::z)
+        .def(
+            "__eq__",
+            &CesiumGeometry::OctreeTileID::operator==,
+            py::is_operator())
+        .def(
+            "__ne__",
+            &CesiumGeometry::OctreeTileID::operator!=,
+            py::is_operator())
+        .def(
+            "__hash__",
+            [](const CesiumGeometry::OctreeTileID& self) {
+              std::size_t h = std::hash<uint32_t>{}(self.level);
+              h ^= std::hash<uint32_t>{}(self.x) + 0x9e3779b9 + (h << 6) +
+                   (h >> 2);
+              h ^= std::hash<uint32_t>{}(self.y) + 0x9e3779b9 + (h << 6) +
+                   (h >> 2);
+              h ^= std::hash<uint32_t>{}(self.z) + 0x9e3779b9 + (h << 6) +
+                   (h >> 2);
+              return h;
+            })
+        .def("__repr__", [](const CesiumGeometry::OctreeTileID& self) {
+          return "OctreeTileID(level=" + std::to_string(self.level) +
+                 ", x=" + std::to_string(self.x) +
+                 ", y=" + std::to_string(self.y) +
+                 ", z=" + std::to_string(self.z) + ")";
+        });
 
-  py::class_<CesiumGeometry::QuadtreeTilingScheme>(m, "QuadtreeTilingScheme")
-      .def(
-          py::init<const CesiumGeometry::Rectangle&, uint32_t, uint32_t>(),
-          py::arg("rectangle"),
-          py::arg("root_tiles_x"),
-          py::arg("root_tiles_y"))
-      .def_property_readonly(
-          "rectangle",
-          &CesiumGeometry::QuadtreeTilingScheme::getRectangle,
-          py::return_value_policy::reference_internal)
-      .def_property_readonly(
-          "root_tiles_x",
-          &CesiumGeometry::QuadtreeTilingScheme::getRootTilesX)
-      .def_property_readonly(
-          "root_tiles_y",
-          &CesiumGeometry::QuadtreeTilingScheme::getRootTilesY)
-      .def(
-          "get_number_of_x_tiles_at_level",
-          &CesiumGeometry::QuadtreeTilingScheme::getNumberOfXTilesAtLevel,
-          py::arg("level"))
-      .def(
-          "get_number_of_y_tiles_at_level",
-          &CesiumGeometry::QuadtreeTilingScheme::getNumberOfYTilesAtLevel,
-          py::arg("level"))
-      .def(
-          "position_to_tile",
-          [](const CesiumGeometry::QuadtreeTilingScheme& self,
-             const py::object& position,
-             uint32_t level) -> py::object {
-            if (isNumpyPointsArray(position, 2)) {
-              return batchQuadtreePositionToTile(self, position, level);
-            }
-            return py::cast(self.positionToTile(toDvec<2>(position), level));
-          },
-          py::arg("position"),
-          py::arg("level"))
-      .def(
-          "tile_to_rectangle",
-          &CesiumGeometry::QuadtreeTilingScheme::tileToRectangle,
-          py::arg("tile_id"));
+    py::class_<CesiumGeometry::QuadtreeTileRectangularRange>(
+        m,
+        "QuadtreeTileRectangularRange")
+        .def(py::init<>())
+        .def_readwrite(
+            "level",
+            &CesiumGeometry::QuadtreeTileRectangularRange::level)
+        .def_readwrite(
+            "minimum_x",
+            &CesiumGeometry::QuadtreeTileRectangularRange::minimumX)
+        .def_readwrite(
+            "minimum_y",
+            &CesiumGeometry::QuadtreeTileRectangularRange::minimumY)
+        .def_readwrite(
+            "maximum_x",
+            &CesiumGeometry::QuadtreeTileRectangularRange::maximumX)
+        .def_readwrite(
+            "maximum_y",
+            &CesiumGeometry::QuadtreeTileRectangularRange::maximumY);
 
-  py::class_<CesiumGeometry::OctreeTilingScheme>(m, "OctreeTilingScheme")
-      .def(
-          py::init<
-              const CesiumGeometry::AxisAlignedBox&,
-              uint32_t,
-              uint32_t,
-              uint32_t>(),
-          py::arg("box"),
-          py::arg("root_tiles_x"),
-          py::arg("root_tiles_y"),
-          py::arg("root_tiles_z"))
-      .def_property_readonly(
-          "box",
-          &CesiumGeometry::OctreeTilingScheme::getBox,
-          py::return_value_policy::reference_internal)
-      .def_property_readonly(
-          "root_tiles_x",
-          &CesiumGeometry::OctreeTilingScheme::getRootTilesX)
-      .def_property_readonly(
-          "root_tiles_y",
-          &CesiumGeometry::OctreeTilingScheme::getRootTilesY)
-      .def_property_readonly(
-          "root_tiles_z",
-          &CesiumGeometry::OctreeTilingScheme::getRootTilesZ)
-      .def(
-          "get_number_of_x_tiles_at_level",
-          &CesiumGeometry::OctreeTilingScheme::getNumberOfXTilesAtLevel,
-          py::arg("level"))
-      .def(
-          "get_number_of_y_tiles_at_level",
-          &CesiumGeometry::OctreeTilingScheme::getNumberOfYTilesAtLevel,
-          py::arg("level"))
-      .def(
-          "get_number_of_z_tiles_at_level",
-          &CesiumGeometry::OctreeTilingScheme::getNumberOfZTilesAtLevel,
-          py::arg("level"))
-      .def(
-          "position_to_tile",
-          [](const CesiumGeometry::OctreeTilingScheme& self,
-             const py::object& position,
-             uint32_t level) -> py::object {
-            if (isNumpyPointsArray(position, 3)) {
-              return batchOctreePositionToTile(self, position, level);
-            }
-            return py::cast(self.positionToTile(toDvec<3>(position), level));
-          },
-          py::arg("position"),
-          py::arg("level"))
-      .def(
-          "tile_to_box",
-          &CesiumGeometry::OctreeTilingScheme::tileToBox,
-          py::arg("tile_id"));
+    py::class_<CesiumGeometry::QuadtreeTilingScheme>(m, "QuadtreeTilingScheme")
+        .def(
+            py::init<const CesiumGeometry::Rectangle&, uint32_t, uint32_t>(),
+            py::arg("rectangle"),
+            py::arg("root_tiles_x"),
+            py::arg("root_tiles_y"))
+        .def_property_readonly(
+            "rectangle",
+            &CesiumGeometry::QuadtreeTilingScheme::getRectangle,
+            py::return_value_policy::reference_internal)
+        .def_property_readonly(
+            "root_tiles_x",
+            &CesiumGeometry::QuadtreeTilingScheme::getRootTilesX)
+        .def_property_readonly(
+            "root_tiles_y",
+            &CesiumGeometry::QuadtreeTilingScheme::getRootTilesY)
+        .def(
+            "get_number_of_x_tiles_at_level",
+            &CesiumGeometry::QuadtreeTilingScheme::getNumberOfXTilesAtLevel,
+            py::arg("level"))
+        .def(
+            "get_number_of_y_tiles_at_level",
+            &CesiumGeometry::QuadtreeTilingScheme::getNumberOfYTilesAtLevel,
+            py::arg("level"))
+        .def(
+            "position_to_tile",
+            [](const CesiumGeometry::QuadtreeTilingScheme& self,
+               const py::object& position,
+               uint32_t level) -> py::object {
+              if (isNumpyPointsArray(position, 2)) {
+                return batchQuadtreePositionToTile(self, position, level);
+              }
+              return py::cast(self.positionToTile(toDvec<2>(position), level));
+            },
+            py::arg("position"),
+            py::arg("level"))
+        .def(
+            "tile_to_rectangle",
+            &CesiumGeometry::QuadtreeTilingScheme::tileToRectangle,
+            py::arg("tile_id"));
 
-  py::class_<CesiumGeometry::OctreeAvailability>(m, "OctreeAvailability")
-      .def(
-          py::init<uint32_t, uint32_t>(),
-          py::arg("subtree_levels"),
-          py::arg("maximum_level"))
-      .def(
-          "compute_availability",
-          py::overload_cast<const CesiumGeometry::OctreeTileID&>(
-              &CesiumGeometry::OctreeAvailability::computeAvailability,
-              py::const_))
-      .def_property_readonly(
-          "subtree_levels",
-          &CesiumGeometry::OctreeAvailability::getSubtreeLevels)
-      .def_property_readonly(
-          "maximum_level",
-          &CesiumGeometry::OctreeAvailability::getMaximumLevel);
+    py::class_<CesiumGeometry::OctreeTilingScheme>(m, "OctreeTilingScheme")
+        .def(
+            py::init<
+                const CesiumGeometry::AxisAlignedBox&,
+                uint32_t,
+                uint32_t,
+                uint32_t>(),
+            py::arg("box"),
+            py::arg("root_tiles_x"),
+            py::arg("root_tiles_y"),
+            py::arg("root_tiles_z"))
+        .def_property_readonly(
+            "box",
+            &CesiumGeometry::OctreeTilingScheme::getBox,
+            py::return_value_policy::reference_internal)
+        .def_property_readonly(
+            "root_tiles_x",
+            &CesiumGeometry::OctreeTilingScheme::getRootTilesX)
+        .def_property_readonly(
+            "root_tiles_y",
+            &CesiumGeometry::OctreeTilingScheme::getRootTilesY)
+        .def_property_readonly(
+            "root_tiles_z",
+            &CesiumGeometry::OctreeTilingScheme::getRootTilesZ)
+        .def(
+            "get_number_of_x_tiles_at_level",
+            &CesiumGeometry::OctreeTilingScheme::getNumberOfXTilesAtLevel,
+            py::arg("level"))
+        .def(
+            "get_number_of_y_tiles_at_level",
+            &CesiumGeometry::OctreeTilingScheme::getNumberOfYTilesAtLevel,
+            py::arg("level"))
+        .def(
+            "get_number_of_z_tiles_at_level",
+            &CesiumGeometry::OctreeTilingScheme::getNumberOfZTilesAtLevel,
+            py::arg("level"))
+        .def(
+            "position_to_tile",
+            [](const CesiumGeometry::OctreeTilingScheme& self,
+               const py::object& position,
+               uint32_t level) -> py::object {
+              if (isNumpyPointsArray(position, 3)) {
+                return batchOctreePositionToTile(self, position, level);
+              }
+              return py::cast(self.positionToTile(toDvec<3>(position), level));
+            },
+            py::arg("position"),
+            py::arg("level"))
+        .def(
+            "tile_to_box",
+            &CesiumGeometry::OctreeTilingScheme::tileToBox,
+            py::arg("tile_id"));
 
-  py::class_<CesiumGeometry::QuadtreeAvailability>(m, "QuadtreeAvailability")
-      .def(
-          py::init<uint32_t, uint32_t>(),
-          py::arg("subtree_levels"),
-          py::arg("maximum_level"))
-      .def(
-          "compute_availability",
-          py::overload_cast<const CesiumGeometry::QuadtreeTileID&>(
-              &CesiumGeometry::QuadtreeAvailability::computeAvailability,
-              py::const_))
-      .def_property_readonly(
-          "subtree_levels",
-          &CesiumGeometry::QuadtreeAvailability::getSubtreeLevels)
-      .def_property_readonly(
-          "maximum_level",
-          &CesiumGeometry::QuadtreeAvailability::getMaximumLevel);
+    py::class_<CesiumGeometry::OctreeAvailability>(m, "OctreeAvailability")
+        .def(
+            py::init<uint32_t, uint32_t>(),
+            py::arg("subtree_levels"),
+            py::arg("maximum_level"))
+        .def(
+            "compute_availability",
+            py::overload_cast<const CesiumGeometry::OctreeTileID&>(
+                &CesiumGeometry::OctreeAvailability::computeAvailability,
+                py::const_))
+        .def_property_readonly(
+            "subtree_levels",
+            &CesiumGeometry::OctreeAvailability::getSubtreeLevels)
+        .def_property_readonly(
+            "maximum_level",
+            &CesiumGeometry::OctreeAvailability::getMaximumLevel);
 
-  py::class_<CesiumGeometry::QuadtreeRectangleAvailability>(
-      m,
-      "QuadtreeRectangleAvailability")
-      .def(
-          py::init<const CesiumGeometry::QuadtreeTilingScheme&, uint32_t>(),
-          py::arg("tiling_scheme"),
-          py::arg("maximum_level"))
-      .def(
-          "add_available_tile_range",
-          &CesiumGeometry::QuadtreeRectangleAvailability::addAvailableTileRange,
-          py::arg("range"))
-      .def(
-          "compute_maximum_level_at_position",
-          [](const CesiumGeometry::QuadtreeRectangleAvailability& self,
-             const py::object& position) -> py::object {
-            if (isNumpyPointsArray(position, 2)) {
-              return batchQuadtreeMaxLevelAtPosition(self, position);
-            }
-            return py::cast(
-                self.computeMaximumLevelAtPosition(toDvec<2>(position)));
-          },
-          py::arg("position"))
-      .def(
-          "is_tile_available",
-          &CesiumGeometry::QuadtreeRectangleAvailability::isTileAvailable,
-          py::arg("id"));
+    py::class_<CesiumGeometry::QuadtreeAvailability>(m, "QuadtreeAvailability")
+        .def(
+            py::init<uint32_t, uint32_t>(),
+            py::arg("subtree_levels"),
+            py::arg("maximum_level"))
+        .def(
+            "compute_availability",
+            py::overload_cast<const CesiumGeometry::QuadtreeTileID&>(
+                &CesiumGeometry::QuadtreeAvailability::computeAvailability,
+                py::const_))
+        .def_property_readonly(
+            "subtree_levels",
+            &CesiumGeometry::QuadtreeAvailability::getSubtreeLevels)
+        .def_property_readonly(
+            "maximum_level",
+            &CesiumGeometry::QuadtreeAvailability::getMaximumLevel);
 
-  // ── Module-level batch helpers ──────────────────────────────────────────
-  m.def(
-      "transform_points",
-      [](const py::handle& points, const py::handle& matrix) {
-        return CesiumPython::transformPointsByMatrix(points, toDmat<4>(matrix));
-      },
-      py::arg("points"),
-      py::arg("matrix"),
-      "Transform (N, 3) points by a 4x4 matrix (GIL-free). Returns (N, 3).");
+    py::class_<CesiumGeometry::QuadtreeRectangleAvailability>(
+        m,
+        "QuadtreeRectangleAvailability")
+        .def(
+            py::init<const CesiumGeometry::QuadtreeTilingScheme&, uint32_t>(),
+            py::arg("tiling_scheme"),
+            py::arg("maximum_level"))
+        .def(
+            "add_available_tile_range",
+            &CesiumGeometry::QuadtreeRectangleAvailability::
+                addAvailableTileRange,
+            py::arg("range"))
+        .def(
+            "compute_maximum_level_at_position",
+            [](const CesiumGeometry::QuadtreeRectangleAvailability& self,
+               const py::object& position) -> py::object {
+              if (isNumpyPointsArray(position, 2)) {
+                return batchQuadtreeMaxLevelAtPosition(self, position);
+              }
+              return py::cast(
+                  self.computeMaximumLevelAtPosition(toDvec<2>(position)));
+            },
+            py::arg("position"))
+        .def(
+            "is_tile_available",
+            &CesiumGeometry::QuadtreeRectangleAvailability::isTileAvailable,
+            py::arg("id"));
+
+    // ── Module-level batch helpers ──────────────────────────────────────────
+    m.def(
+        "transform_points",
+        [](const py::handle& points, const py::handle& matrix) {
+          return CesiumPython::transformPointsByMatrix(
+              points,
+              toDmat<4>(matrix));
+        },
+        py::arg("points"),
+        py::arg("matrix"),
+        "Transform (N, 3) points by a 4x4 matrix (GIL-free). Returns (N, 3).");
 }

@@ -83,7 +83,43 @@ void initGltfContentBindings(py::module& m) {
       .def_readwrite("x", &CesiumGltfContent::PixelRectangle::x)
       .def_readwrite("y", &CesiumGltfContent::PixelRectangle::y)
       .def_readwrite("width", &CesiumGltfContent::PixelRectangle::width)
-      .def_readwrite("height", &CesiumGltfContent::PixelRectangle::height);
+      .def_readwrite("height", &CesiumGltfContent::PixelRectangle::height)
+      .def(
+          "__repr__",
+          [](const CesiumGltfContent::PixelRectangle& self) {
+            return "PixelRectangle(x=" + std::to_string(self.x) +
+                   ", y=" + std::to_string(self.y) +
+                   ", width=" + std::to_string(self.width) +
+                   ", height=" + std::to_string(self.height) + ")";
+          })
+      .def(
+          "__eq__",
+          [](const CesiumGltfContent::PixelRectangle& a,
+             const CesiumGltfContent::PixelRectangle& b) {
+            return a.x == b.x && a.y == b.y && a.width == b.width &&
+                   a.height == b.height;
+          },
+          py::is_operator())
+      .def(
+          "__ne__",
+          [](const CesiumGltfContent::PixelRectangle& a,
+             const CesiumGltfContent::PixelRectangle& b) {
+            return a.x != b.x || a.y != b.y || a.width != b.width ||
+                   a.height != b.height;
+          },
+          py::is_operator())
+      .def("__hash__", [](const CesiumGltfContent::PixelRectangle& self) {
+        std::size_t seed = 0;
+        seed ^= std::hash<int32_t>{}(self.x) + 0x9e3779b9 + (seed << 6) +
+                (seed >> 2);
+        seed ^= std::hash<int32_t>{}(self.y) + 0x9e3779b9 + (seed << 6) +
+                (seed >> 2);
+        seed ^= std::hash<int32_t>{}(self.width) + 0x9e3779b9 + (seed << 6) +
+                (seed >> 2);
+        seed ^= std::hash<int32_t>{}(self.height) + 0x9e3779b9 + (seed << 6) +
+                (seed >> 2);
+        return seed;
+      });
 
   py::class_<CesiumGltfContent::ImageManipulation>(m, "ImageManipulation")
       .def_static(
@@ -288,7 +324,15 @@ void initGltfContentBindings(py::module& m) {
           &CesiumGltfContent::GltfUtilities::RayGltfHit::meshId)
       .def_readonly(
           "primitive_id",
-          &CesiumGltfContent::GltfUtilities::RayGltfHit::primitiveId);
+          &CesiumGltfContent::GltfUtilities::RayGltfHit::primitiveId)
+      .def(
+          "__repr__",
+          [](const CesiumGltfContent::GltfUtilities::RayGltfHit& self) {
+            return "RayGltfHit(mesh_id=" + std::to_string(self.meshId) +
+                   ", primitive_id=" + std::to_string(self.primitiveId) +
+                   ", distance_sq=" +
+                   std::to_string(self.rayToWorldPointDistanceSq) + ")";
+          });
 
   // IntersectResult
   py::class_<CesiumGltfContent::GltfUtilities::IntersectResult>(
@@ -304,7 +348,19 @@ void initGltfContentBindings(py::module& m) {
           })
       .def_readonly(
           "warnings",
-          &CesiumGltfContent::GltfUtilities::IntersectResult::warnings);
+          &CesiumGltfContent::GltfUtilities::IntersectResult::warnings)
+      .def(
+          "__bool__",
+          [](const CesiumGltfContent::GltfUtilities::IntersectResult& self) {
+            return self.hit.has_value();
+          })
+      .def(
+          "__repr__",
+          [](const CesiumGltfContent::GltfUtilities::IntersectResult& self) {
+            if (self.hit)
+              return std::string("IntersectResult(hit=<RayGltfHit>)");
+            return std::string("IntersectResult(hit=None)");
+          });
 
   // ── SkirtMeshMetadata (G10) ─────────────────────────────────────────────
   py::class_<CesiumGltfContent::SkirtMeshMetadata>(m, "SkirtMeshMetadata")

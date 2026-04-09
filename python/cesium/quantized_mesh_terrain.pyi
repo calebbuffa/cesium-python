@@ -11,13 +11,27 @@ class AvailabilityRectangle:
     start_y: int
     end_x: int
     end_y: int
+    @property
+    def size_bytes(self) -> int: ...
 
 class Layer:
     attribution: str
+    available: list[list[AvailabilityRectangle]]
+    bounds: list[float]
+    description: str | None
+    extensions_property: str | None
     format: str
+    maxzoom: int
+    minzoom: int
+    metadata_availability: int
+    name: str | None
+    parent_url: str | None
     projection: str
     scheme: str
     tiles: list[str]
+    version: str
+    @property
+    def size_bytes(self) -> int: ...
     def get_projection(self, ellipsoid: Ellipsoid = ...) -> Projection | None: ...
     def get_tiling_scheme(
         self, ellipsoid: Ellipsoid = ...

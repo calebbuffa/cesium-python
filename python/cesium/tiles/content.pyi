@@ -20,16 +20,6 @@ from ..gltf.reader import GltfReaderOptions
 from ..utility import ErrorList
 from . import BoundingVolume, Subtree, Tile
 
-class TileContentLoadResult:
-    magic: str
-    file_extension: str
-    success: bool
-
-class TileContentFactory:
-    def __init__(self) -> None: ...
-    def converter_by_file_extension(self, file_extension: str) -> str | None: ...
-    def converter_by_magic(self, magic: str) -> str | None: ...
-
 class BinaryToGltfConverter:
     @staticmethod
     def convert(

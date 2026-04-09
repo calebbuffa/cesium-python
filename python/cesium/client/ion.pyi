@@ -78,6 +78,10 @@ class Asset:
     date_added: str
     status: str
     percent_complete: int
+    def __repr__(self) -> str: ...
+    def __eq__(self, other: object) -> bool: ...
+    def __ne__(self, other: object) -> bool: ...
+    def __hash__(self) -> int: ...
 
 class Assets:
     link: str
@@ -94,6 +98,10 @@ class Token:
     is_default: bool
     allowed_urls: Optional[list[str]]
     scopes: list[str]
+    def __repr__(self) -> str: ...
+    def __eq__(self, other: object) -> bool: ...
+    def __ne__(self, other: object) -> bool: ...
+    def __hash__(self) -> int: ...
 
 class TokenList:
     items: list[Token]
@@ -147,6 +155,7 @@ class GeocoderAttribution:
     show_on_screen: bool
 
 class GeocoderFeature:
+    def __init__(self) -> None: ...
     display_name: str
     @property
     def globe_rectangle(self) -> GlobeRectangle: ...
@@ -166,6 +175,7 @@ class LoginToken:
     def token(self) -> str: ...
     @staticmethod
     def parse_summary(token_string: str) -> dict: ...
+    def __bool__(self) -> bool: ...
 
 class Connection:
     def __init__(
@@ -210,7 +220,7 @@ class Connection:
         api_url: str = "https://api.cesium.com",
     ) -> Future[Response[ApplicationData]]: ...
     @staticmethod
-    def get_api_url_from_server(
+    def api_url_from_server(
         async_system: AsyncSystem,
         asset_accessor: IAssetAccessor,
         ion_url: str,

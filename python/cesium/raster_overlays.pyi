@@ -21,6 +21,7 @@ class RasterOverlayOptions:
     maximum_simultaneous_tile_loads: int
     sub_tile_cache_bytes: int
     maximum_screen_space_error: float
+    ktx2_transcode_targets: int
     show_credits_on_screen: bool
     ellipsoid: Ellipsoid
     load_error_callback: Callable[[RasterOverlayLoadFailureDetails], None] | None
@@ -247,7 +248,10 @@ class GoogleMapTilesRasterOverlay(RasterOverlay):
 class RasterOverlayLoadFailureDetails:
     """Details about a raster overlay load failure."""
 
-    ...
+    type: int
+    request: object | None
+    message: str
+    def __init__(self) -> None: ...
 
 class ActivatedRasterOverlay:
     @property

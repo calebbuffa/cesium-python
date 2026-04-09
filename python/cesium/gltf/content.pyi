@@ -46,12 +46,15 @@ class RayGltfHit:
     ray_to_world_point_distance_sq: float
     mesh_id: int
     primitive_id: int
+    def __repr__(self) -> str: ...
 
 class IntersectResult:
     """Hit result data for intersect_ray_gltf_model."""
     @property
     def hit(self) -> RayGltfHit | None: ...
     warnings: list[str]
+    def __bool__(self) -> bool: ...
+    def __repr__(self) -> str: ...
 
 class GltfUtilities:
     @staticmethod

@@ -1126,6 +1126,20 @@ void initGeospatialBindings(py::module& m) {
           py::arg("left"),
           py::arg("right"),
           py::arg("relative_epsilon"))
+      .def(
+          "__eq__",
+          [](const CesiumGeospatial::BoundingRegion& self,
+             const CesiumGeospatial::BoundingRegion& other) {
+            return CesiumGeospatial::BoundingRegion::equals(self, other);
+          },
+          py::is_operator())
+      .def(
+          "__ne__",
+          [](const CesiumGeospatial::BoundingRegion& self,
+             const CesiumGeospatial::BoundingRegion& other) {
+            return !CesiumGeospatial::BoundingRegion::equals(self, other);
+          },
+          py::is_operator())
       .def("__repr__", [](const CesiumGeospatial::BoundingRegion& self) {
         return "BoundingRegion(min_height=" +
                std::to_string(self.getMinimumHeight()) +
@@ -1366,6 +1380,12 @@ void initGeospatialBindings(py::module& m) {
       .def(
           py::init<const CesiumGeospatial::Ellipsoid&>(),
           py::arg("ellipsoid") = CesiumGeospatial::Ellipsoid::WGS84)
+      .def_property_readonly_static(
+          "MAXIMUM_GLOBE_RECTANGLE",
+          [](py::object) {
+            return CesiumGeospatial::GeographicProjection::
+                MAXIMUM_GLOBE_RECTANGLE;
+          })
       .def_property_readonly(
           "ellipsoid",
           &CesiumGeospatial::GeographicProjection::getEllipsoid,
@@ -1391,14 +1411,16 @@ void initGeospatialBindings(py::module& m) {
             }
             CesiumGeospatial::Cartographic c =
                 py::cast<CesiumGeospatial::Cartographic>(cartographic);
-            glm::dvec3 projected = self.project(c);
-            return cartographicToNumpy(
-                CesiumGeospatial::Cartographic(
-                    projected.x,
-                    projected.y,
-                    projected.z));
+            return toNumpy(self.project(c));
           },
           py::arg("cartographic"))
+      .def(
+          "project",
+          [](const CesiumGeospatial::GeographicProjection& self,
+             const CesiumGeospatial::GlobeRectangle& globe_rect) {
+            return self.project(globe_rect);
+          },
+          py::arg("globe_rectangle"))
       .def(
           "unproject",
           [](const CesiumGeospatial::GeographicProjection& self,
@@ -1441,6 +1463,13 @@ void initGeospatialBindings(py::module& m) {
             throw py::value_error("Expected projected sequence length 2 or 3.");
           },
           py::arg("projected"))
+      .def(
+          "unproject",
+          [](const CesiumGeospatial::GeographicProjection& self,
+             const CesiumGeometry::Rectangle& rectangle) {
+            return self.unproject(rectangle);
+          },
+          py::arg("rectangle"))
       .def("__eq__", &CesiumGeospatial::GeographicProjection::operator==)
       .def("__ne__", &CesiumGeospatial::GeographicProjection::operator!=);
 
@@ -1454,6 +1483,12 @@ void initGeospatialBindings(py::module& m) {
           "MAXIMUM_LATITUDE",
           [](py::object) {
             return CesiumGeospatial::WebMercatorProjection::MAXIMUM_LATITUDE;
+          })
+      .def_property_readonly_static(
+          "MAXIMUM_GLOBE_RECTANGLE",
+          [](py::object) {
+            return CesiumGeospatial::WebMercatorProjection::
+                MAXIMUM_GLOBE_RECTANGLE;
           })
       .def_property_readonly(
           "ellipsoid",
@@ -1480,14 +1515,16 @@ void initGeospatialBindings(py::module& m) {
             }
             CesiumGeospatial::Cartographic c =
                 py::cast<CesiumGeospatial::Cartographic>(cartographic);
-            glm::dvec3 projected = self.project(c);
-            return cartographicToNumpy(
-                CesiumGeospatial::Cartographic(
-                    projected.x,
-                    projected.y,
-                    projected.z));
+            return toNumpy(self.project(c));
           },
           py::arg("cartographic"))
+      .def(
+          "project",
+          [](const CesiumGeospatial::WebMercatorProjection& self,
+             const CesiumGeospatial::GlobeRectangle& globe_rect) {
+            return self.project(globe_rect);
+          },
+          py::arg("globe_rectangle"))
       .def(
           "unproject",
           [](const CesiumGeospatial::WebMercatorProjection& self,
@@ -1530,6 +1567,13 @@ void initGeospatialBindings(py::module& m) {
             throw py::value_error("Expected projected sequence length 2 or 3.");
           },
           py::arg("projected"))
+      .def(
+          "unproject",
+          [](const CesiumGeospatial::WebMercatorProjection& self,
+             const CesiumGeometry::Rectangle& rectangle) {
+            return self.unproject(rectangle);
+          },
+          py::arg("rectangle"))
       .def_static(
           "mercator_angle_to_geodetic_latitude",
           &CesiumGeospatial::WebMercatorProjection::

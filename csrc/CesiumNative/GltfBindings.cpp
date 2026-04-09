@@ -56,6 +56,7 @@
 #include <CesiumGltf/PropertyTexture.h>
 #include <CesiumGltf/PropertyTextureProperty.h>
 #include <CesiumGltf/Sampler.h>
+#include <CesiumGltf/SamplerUtility.h>
 #include <CesiumGltf/Scene.h>
 #include <CesiumGltf/Schema.h>
 #include <CesiumGltf/Skin.h>
@@ -2368,6 +2369,8 @@ void initGltfBindings(py::module& m) {
             py::arg("accessor_index"),
             py::keep_alive<1, 2>())
         .def_property_readonly("status", &CesiumGltf::AccessorView<T>::status)
+        .def_property_readonly("stride", &CesiumGltf::AccessorView<T>::stride)
+        .def_property_readonly("offset", &CesiumGltf::AccessorView<T>::offset)
         .def("__len__", &CesiumGltf::AccessorView<T>::size)
         .def(
             "__getitem__",
@@ -2637,7 +2640,8 @@ void initGltfBindings(py::module& m) {
                 for (int64_t i = 0; i < n; ++i)
                   self[i] = T(in(i, 0), in(i, 1), in(i, 2), in(i, 3));
               } else if constexpr (std::is_same_v<T, glm::mat4>) {
-                auto in = arr.cast<py::array_t<float>>().template unchecked<3>();
+                auto in =
+                    arr.cast<py::array_t<float>>().template unchecked<3>();
                 if (in.shape(0) != n || in.shape(1) != 4 || in.shape(2) != 4)
                   throw py::value_error(
                       "Expected (" + std::to_string(n) + ", 4, 4) array");
@@ -2800,4 +2804,18 @@ void initGltfBindings(py::module& m) {
       py::arg("model"),
       py::arg("accessor_index"),
       "Get quaternion accessor as an (N,4) numpy array.");
+
+  m.def(
+      "apply_sampler_wrap_s",
+      &CesiumGltf::applySamplerWrapS,
+      py::arg("u"),
+      py::arg("wrap_s"),
+      "Apply a sampler WrapS mode to a U texture coordinate.");
+
+  m.def(
+      "apply_sampler_wrap_t",
+      &CesiumGltf::applySamplerWrapT,
+      py::arg("v"),
+      py::arg("wrap_t"),
+      "Apply a sampler WrapT mode to a V texture coordinate.");
 }

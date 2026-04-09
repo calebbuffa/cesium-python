@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import Any
+
 from ..utility import JsonValue
 
 class TileRefine:
@@ -15,20 +18,84 @@ class BoundingVolume:
     def __init__(self) -> None: ...
 
 class Tile:
+    bounding_volume: BoundingVolume
+    viewer_request_volume: BoundingVolume | None
     geometric_error: float
     refine: TileRefine
+    transform: list[float]
+    content: Content | None
+    contents: list[Content]
+    metadata: MetadataEntity | None
+    implicit_tiling: ImplicitTiling | None
     children: list[Tile]
-    content_uri: str
+    @property
+    def size_bytes(self) -> int: ...
+    def __init__(self) -> None: ...
 
 class Tileset:
-    root: Tile
+    asset: Asset
+    properties: dict[str, Properties]
+    schema: Schema | None
+    schema_uri: str | None
+    statistics: Statistics | None
+    groups: list[GroupMetadata]
+    metadata: MetadataEntity | None
     geometric_error: float
+    root: Tile
+    extensions_used: list[str]
+    extensions_required: list[str]
+    def add_extension_used(self, name: str) -> None: ...
+    def add_extension_required(self, name: str) -> None: ...
+    def remove_extension_used(self, name: str) -> None: ...
+    def remove_extension_required(self, name: str) -> None: ...
+    def is_extension_used(self, name: str) -> bool: ...
+    def is_extension_required(self, name: str) -> bool: ...
+    @property
+    def size_bytes(self) -> int: ...
+    def for_each_tile(
+        self,
+        callback: Callable[[Tileset, Tile, Any], None],
+    ) -> None: ...
+    def for_each_content(
+        self,
+        callback: Callable[[Tileset, Tile, Content, Any], None],
+    ) -> None: ...
+    def __init__(self) -> None: ...
 
-class Subtree: ...
+class Subtree:
+    buffers: list[Buffer]
+    buffer_views: list[BufferView]
+    property_tables: list[PropertyTable]
+    tile_availability: Availability
+    content_availability: list[Availability]
+    child_subtree_availability: Availability
+    tile_metadata: MetadataEntity | None
+    content_metadata: list[MetadataEntity]
+    subtree_metadata: MetadataEntity | None
+    @property
+    def size_bytes(self) -> int: ...
+    def __init__(self) -> None: ...
+
 class SubtreeBuffer: ...
-class Availability: ...
+
+class Availability:
+    bitstream: int | None
+    available_count: int | None
+    constant: int | None
+    @property
+    def size_bytes(self) -> int: ...
+    def __init__(self) -> None: ...
+
 class ImplicitTileCoordinates: ...
-class ImplicitTiling: ...
+
+class ImplicitTiling:
+    subdivision_scheme: str
+    subtree_levels: int
+    available_levels: int
+    subtrees: Subtrees
+    @property
+    def size_bytes(self) -> int: ...
+    def __init__(self) -> None: ...
 
 class EnumValue:
     name: str
